@@ -12,6 +12,27 @@
 
 namespace gazebo
 {
+    bool PublishedTime::write(yarp::os::ConnectionWriter& connection)
+    {
+        connection.appendInt(BOTTLE_TAG_LIST+BOTTLE_TAG_INT);
+        connection.appendInt(2);
+        connection.appendInt(sec);
+        connection.appendInt(nsec);
+        connection.convertTextMode();
+        return true;
+    }
+
+    bool PublishedTime::read(yarp::os::ConnectionReader& connection)
+    {
+        connection.convertTextMode(); // if connection is text-mode, convert!
+        int tag = connection.expectInt();
+        if (tag!=BOTTLE_TAG_LIST+BOTTLE_TAG_INT) return false;
+        int ct = connection.expectInt();
+        if (ct!=2) return false;
+        sec = connection.expectInt();
+        nsec = connection.expectInt();
+        return !connection.isError();
+    }
 
     GazeboYarpClock::GazeboYarpClock() : _yarp()
     {
@@ -59,12 +80,11 @@ namespace gazebo
 
     void GazeboYarpClock::ClockUpdate()
     {
-         gazebo::common::Time currentTime = world_->GetSimTime();
-         yarp::os::Bottle& b = port.prepare();
-         b.clear();
-         b.addInt(currentTime.sec);
-         b.addInt(currentTime.nsec);
-         port.write();
+        gazebo::common::Time currentTime = world_->GetSimTime();
+        PublishedTime& pubTime = port.prepare();
+        pubTime.sec = currentTime.sec;
+        pubTime.nsec = currentTime.nsec;
+        port.write();
     }
 
     // Register this plugin with the simulator

@@ -11,9 +11,21 @@
 #include <yarp/os/Network.h>
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/Bottle.h>
+#include <yarp/os/Portable.h>
 
 namespace gazebo
 {
+    /** Yarp portable version of the gazebo::common::Time class */
+    class PublishedTime : public yarp::os::Portable
+    {
+    public:
+        int sec;
+        int nsec;
+
+        virtual bool write(yarp::os::ConnectionWriter& connection);
+        virtual bool read(yarp::os::ConnectionReader& connection);
+    };
+
     class GazeboYarpClock : public SystemPlugin
     {
     public:
@@ -33,7 +45,7 @@ namespace gazebo
 
         std::string topic_name;
 
-        yarp::os::BufferedPort<yarp::os::Bottle> port;
+        yarp::os::BufferedPort<PublishedTime> port;
 
         gazebo::event::ConnectionPtr time_update_event_;
 
