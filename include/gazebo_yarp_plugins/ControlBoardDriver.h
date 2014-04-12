@@ -297,7 +297,7 @@ private:
     std::vector<GazeboYarpControlBoardDriver::PID> _velocityPIDs;
     std::vector<GazeboYarpControlBoardDriver::PID> _impedancePosPDs;
 
-    yarp::sig::Vector torqueOffsett;
+    yarp::sig::Vector torqueOffset;
     yarp::sig::Vector minStiffness;
     yarp::sig::Vector minDamping;
     yarp::sig::Vector maxStiffness;

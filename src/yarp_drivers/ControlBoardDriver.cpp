@@ -59,7 +59,7 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     _positionPIDs.reserve(numberOfJoints);
     _velocityPIDs.reserve(numberOfJoints);
     _impedancePosPDs.reserve(numberOfJoints);
-    torqueOffsett.resize(numberOfJoints);
+    torqueOffset.resize(numberOfJoints);
     minStiffness.resize(numberOfJoints, 0.0);
     maxStiffness.resize(numberOfJoints, 1000.0);
     minDamping.resize(numberOfJoints, 0.0);
@@ -83,7 +83,7 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     controlMode = new int[numberOfJoints];
     motion_done = new bool[numberOfJoints];
     _clock = 0;
-    torqueOffsett = 0;
+    torqueOffset = 0;
     for (unsigned int j = 0; j < numberOfJoints; ++j)
         controlMode[j] = VOCAB_CM_POSITION;
     
@@ -518,7 +518,7 @@ void GazeboYarpControlBoardDriver::sendImpPositionToGazebo ( const int j, const 
          */
         //std::cout<<"speed"<<j<<" : "<<speed[j]<<std::endl;
         double q = pos[j] - zeroPosition[j];
-        double t_ref = -_impedancePosPDs[j].p * (q - des) - _impedancePosPDs[j].d * speed[j] + torqueOffsett[j];
+        double t_ref = -_impedancePosPDs[j].p * (q - des) - _impedancePosPDs[j].d * speed[j] + torqueOffset[j];
         sendTorqueToGazebo(j, t_ref);
     }
 }
