@@ -76,6 +76,10 @@ GZ_REGISTER_MODEL_PLUGIN(GazeboYarpControlBoard)
                     printf("GazeboYarpControlBoard::Load  Error: [WRAPPER] group not found in config file\n");
                     return;
                 }
+                yarp::os::ConstString tmp_name = wrapper_group.find("name").asString();
+                tmp_name = yarp::os::ConstString(m_robotName) + "/" + tmp_name;
+                wrapper_group.find("name") = yarp::os::Value(tmp_name);
+
                 configuration_loaded = true;
             }
         }
@@ -85,6 +89,7 @@ GZ_REGISTER_MODEL_PLUGIN(GazeboYarpControlBoard)
         }
 
         m_wrapper.open(wrapper_group);
+
     
         if (!m_wrapper.isValid())
             fprintf(stderr, "GazeboYarpControlBoard: wrapper did not open\n");
