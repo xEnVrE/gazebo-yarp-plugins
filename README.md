@@ -8,14 +8,18 @@ Installation
 ------------
 ### Dependencies 
 For using Yarp with Gazebo, you shall install:
- * Gazebo simulator (at least version 2.0), following the [instructions on the official Gazebo website](http://gazebosim.org/wiki/Install).
+ * Gazebo simulator and its header files (at least version 2.0), following the [instructions on the official Gazebo website](http://gazebosim.org/wiki/Install).
  * Yarp (at least version 2.3.62, i.e. the version available in the master branch of the yarp repository) following the [instructions on the official Yarp wiki](http://wiki.icub.org/wiki/Linux:Installation_from_sources#Getting_the_YARP_and_iCub_sources) and enabling the CREATE_SHARED_LIBRARY CMake option to compile Yarp as a shared library.
 
+**Gazebo is under active development, so it is recommended to use the latest released version of Gazebo.**
+
+*You could prefer to run an older version of Gazebo if you want to use it with ROS integration. Depending on your ROS version you have to stick to a given Gazebo version.*
+*Yarp integration provided by gazebo_yarp_plugins is not affected by this kind of limitations.* 
 
 ###Compile time dependencies
 For compiling gazebo_yarp_plugins you need the headers for the following libraries:
   * [tinyxml](http://www.grinninglizard.com/tinyxml/)
-  * [Boost System](www.boost.org/doc/libs/release/libs/system/)
+  * [Boost System](http://www.boost.org/doc/libs/release/libs/system/)
 
 For example on Ubuntu you can install them with the following command:
 ```
@@ -89,6 +93,7 @@ Troubleshooting
 
 - If the simulation run slowly, check that you are using the latest graphics driver available for your platform. If you a running a recent Ubuntu version (13.10 or 14.04) you can try (at your own risk) to use the drivers provided by the [oibaf PPA](https://launchpad.net/~oibaf/+archive/graphics-drivers).
 
+- If Gazebo crashes without any error message while loading a model using gazebo_yarp_plugins, you have issue with shared library linking. Probably gazebo_yarp_plugins is linked against a manually installed library (for example boost), while the gazebo binary is linking against the system version of the same library. For more information read [issue  71 discussion](https://github.com/robotology/gazebo_yarp_plugins/issues/71) or file [a new issue](https://github.com/robotology/gazebo_yarp_plugins/issues/new) to get help from the developers. 
 
 Design
 ------
@@ -97,7 +102,4 @@ More information on the internal structure of gazebo_yarp_plugins is [available 
 
 Contributing
 ------------
-If you would like to contribute to the development of gazebo_yarp_plugins, please get in contact with the development team using [GitHub issues](https://github.com/robotology/gazebo_yarp_plugins/issues). 
-
-
-
+See [Contributing File](CONTRIBUTING.md)

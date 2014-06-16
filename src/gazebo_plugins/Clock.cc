@@ -4,6 +4,7 @@
  * CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
  */
 
+#include "gazebo_yarp_plugins/common.h"
 #include "gazebo_yarp_plugins/Clock.hh"
 #include <gazebo/physics/physics.hh>
 #include <yarp/os/Property.h>
@@ -12,6 +13,7 @@
 
 namespace gazebo
 {
+
     bool PublishedTime::write(yarp::os::ConnectionWriter& connection)
     {
         connection.appendInt(BOTTLE_TAG_LIST+BOTTLE_TAG_INT);
@@ -47,7 +49,9 @@ namespace gazebo
 
     void GazeboYarpClock::Load(int _argc, char **_argv)
     {
-        if( !_yarp.checkNetwork() ) {
+
+        if( !_yarp.checkNetwork(GazeboYarpPlugins::yarpNetworkInitializationTimeout) ) {
+
             std::cerr << "GazeboYarpClock::Load error: yarp network does not seem to be available, is the yarpserver running?"<<std::endl;
             return;
         }
@@ -57,6 +61,7 @@ namespace gazebo
         port_name = "/gazebo_yarp_clock:o";
 
         topic_name = "/clock";
+
 
         //The proper loading is done when the world is created
         load_gazebo_yarp_clock = gazebo::event::Events::ConnectWorldCreated(boost::bind(&GazeboYarpClock::GazeboYarpClockLoad,this,_1));
@@ -75,6 +80,7 @@ namespace gazebo
           //Getting world pointer
           world_ = gazebo::physics::get_world(world_name);
 
+          //Attach world update callback to clock update function
           time_update_event_ = gazebo::event::Events::ConnectWorldUpdateBegin(boost::bind(&GazeboYarpClock::ClockUpdate,this));
     }
 

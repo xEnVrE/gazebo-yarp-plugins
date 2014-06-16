@@ -7,7 +7,8 @@
 #ifndef GAZEBOYARP_CLOCKPLUGIN_HH
 #define GAZEBOYARP_CLOCKPLUGIN_HH
 
-#include <gazebo/gazebo.hh>
+#include <gazebo/common/Plugin.hh>
+
 #include <yarp/os/Network.h>
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/Bottle.h>
@@ -46,6 +47,7 @@ namespace gazebo
         std::string topic_name;
 
         yarp::os::BufferedPort<PublishedTime> port;
+
 
         gazebo::event::ConnectionPtr time_update_event_;
 
