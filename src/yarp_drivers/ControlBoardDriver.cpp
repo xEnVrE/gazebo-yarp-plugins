@@ -92,12 +92,12 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
 
     yarp::sig::Vector initial_config(m_numberOfJoints, 0.0);
     yarp::os::Value configurationParameter = m_pluginParameters.find("initialConfiguration");
+    unsigned int counter = 0;
     if (!configurationParameter.isNull()
         && configurationParameter.isString()
         && configurationParameter.asString().length() > 0) {
         std::stringstream ss(m_pluginParameters.find("initialConfiguration").toString());
         double tmp = 0.0;
-        unsigned int counter = 0;
         while (ss >> tmp) {
             if(counter >= m_numberOfJoints) {
                 std::cout << "To many element in initial configuration. Stopping at element " << counter << std::endl;
@@ -107,6 +107,10 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
         }
     }
     
+    for (int jointIndex = counter; jointIndex < m_numberOfJoints; jointIndex++) {
+        //TODO: here we must read an initial configuration for the joints which have not been set by the configuration parameter value
+    }
+    
     std::cout<<"INITIAL CONFIGURATION IS: " << initial_config.toString() << std::endl;
     for (unsigned int i = 0; i < m_numberOfJoints; ++i) {
         double radianAngle = initial_config[i];
@@ -114,9 +118,9 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
         
         std::cout << "Setting (" << i << ") angle: " << radianAngle << " degrees: " << degreeAngle << "\n";
         
-        m_trajectoryGenerationReferencePosition[i] = GazeboYarpPlugins::convertRadiansToDegrees(degreeAngle);
-        m_referencePositions[i] = GazeboYarpPlugins::convertRadiansToDegrees(degreeAngle);
-        m_positions[i] = GazeboYarpPlugins::convertRadiansToDegrees(degreeAngle);
+        m_trajectoryGenerationReferencePosition[i] = degreeAngle;
+        m_referencePositions[i] = degreeAngle;
+        m_positions[i] = degreeAngle;
         
         gazebo::math::Angle angle;
         angle.SetFromRadian(radianAngle);
