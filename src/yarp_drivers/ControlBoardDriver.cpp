@@ -90,30 +90,38 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
 
     _T_controller = 1;
 
-    std::stringstream ss(m_pluginParameters.find("initialConfiguration").toString());
-    if (!(m_pluginParameters.find("initialConfiguration") == "")) {
+    yarp::sig::Vector initial_config(m_numberOfJoints, 0.0);
+    yarp::os::Value configurationParameter = m_pluginParameters.find("initialConfiguration");
+    if (!configurationParameter.isNull()
+        && configurationParameter.isString()
+        && configurationParameter.asString().length() > 0) {
+        std::stringstream ss(m_pluginParameters.find("initialConfiguration").toString());
         double tmp = 0.0;
-        yarp::sig::Vector initial_config(m_numberOfJoints);
-        unsigned int counter = 1;
+        unsigned int counter = 0;
         while (ss >> tmp) {
-            if(counter > m_numberOfJoints) {
-                std::cout<<"To many element in initial configuration, stopping at element "<<counter<<std::endl;
+            if(counter >= m_numberOfJoints) {
+                std::cout << "To many element in initial configuration. Stopping at element " << counter << std::endl;
                 break;
             }
-            initial_config[counter-1] = tmp;
-            m_trajectoryGenerationReferencePosition[counter - 1] = GazeboYarpPlugins::convertRadiansToDegrees(tmp);
-            m_referencePositions[counter - 1] = GazeboYarpPlugins::convertRadiansToDegrees(tmp);
-            m_positions[counter - 1] = GazeboYarpPlugins::convertRadiansToDegrees(tmp);
-            counter++;
+            initial_config[counter++] = tmp;
         }
-        std::cout<<"INITIAL CONFIGURATION IS: "<<initial_config.toString()<<std::endl;
-
-        for (unsigned int i = 0; i < m_numberOfJoints; ++i) {
-            gazebo::math::Angle a;
-            a.SetFromRadian(initial_config[i]);
-            std::string joint_name = m_jointNames[i];
-            m_robot->GetJoint(joint_name)->SetAngle(0,a);
-        }
+    }
+    
+    std::cout<<"INITIAL CONFIGURATION IS: " << initial_config.toString() << std::endl;
+    for (unsigned int i = 0; i < m_numberOfJoints; ++i) {
+        double radianAngle = initial_config[i];
+        double degreeAngle = GazeboYarpPlugins::convertRadiansToDegrees(radianAngle);
+        
+        std::cout << "Setting (" << i << ") angle: " << radianAngle << " degrees: " << degreeAngle << "\n";
+        
+        m_trajectoryGenerationReferencePosition[i] = GazeboYarpPlugins::convertRadiansToDegrees(degreeAngle);
+        m_referencePositions[i] = GazeboYarpPlugins::convertRadiansToDegrees(degreeAngle);
+        m_positions[i] = GazeboYarpPlugins::convertRadiansToDegrees(degreeAngle);
+        
+        gazebo::math::Angle angle;
+        angle.SetFromRadian(radianAngle);
+        std::string joint_name = m_jointNames[i];
+        m_robot->GetJoint(joint_name)->SetAngle(0, angle);
     }
     return true;
 }
@@ -147,7 +155,7 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& /*
     // Sensing position & torque
     for (unsigned int jnt_cnt = 0; jnt_cnt < m_jointNames.size(); jnt_cnt++) {
 //TODO: consider multi-dof joint ?
-        m_positions[jnt_cnt] = this->m_robot->GetJoint(m_jointNames[jnt_cnt])->GetAngle (0).Degree();
+        m_positions[jnt_cnt] = this->m_robot->GetJoint(m_jointNames[jnt_cnt])->GetAngle(0).Degree();
         m_velocities[jnt_cnt] = GazeboYarpPlugins::convertRadiansToDegrees(this->m_robot->GetJoint(m_jointNames[jnt_cnt])->GetVelocity(0));
         m_torques[jnt_cnt] = this->m_robot->GetJoint(m_jointNames[jnt_cnt])->GetForce(0);
     }
