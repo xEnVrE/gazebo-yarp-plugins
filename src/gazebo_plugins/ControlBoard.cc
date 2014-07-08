@@ -46,12 +46,12 @@ GZ_REGISTER_MODEL_PLUGIN(GazeboYarpControlBoard)
             return;
         }
         std::cout<<"*** GazeboYarpControlBoard plugin started ***"<<std::endl;
-        
+
         if (!_parent) {
             gzerr << "GazeboYarpControlBoard plugin requires a parent.\n";
             return;
         }
-        
+
         m_robotName = _parent->GetScopedName();
         GazeboYarpPlugins::Handler::getHandler()->setRobot(get_pointer(_parent));
 
@@ -67,18 +67,18 @@ GZ_REGISTER_MODEL_PLUGIN(GazeboYarpControlBoard)
             std::string ini_file_name = _sdf->Get<std::string>("yarpConfigurationFile");
             std::string ini_file_path = gazebo::common::SystemPaths::Instance()->FindFileURI(ini_file_name);
 
-            if (ini_file_path != "" && m_parameters.fromConfigFile(ini_file_path.c_str())) {
-                std::cout << "GazeboYarpControlBoard: Found yarpConfigurationFile: loading from " << ini_file_path << std::endl; 
+            std::string robotNameNotScoped = _parent->GetName();
+            m_parameters.put("gazeboYarpPluginsRobotName",robotNameNotScoped.c_str());
+
+            if (ini_file_path != "" && m_parameters.fromConfigFile(ini_file_path.c_str(),false)) {
+                std::cout << "GazeboYarpControlBoard: Found yarpConfigurationFile: loading from " << ini_file_path << std::endl;
                 m_parameters.put("gazebo_ini_file_path",ini_file_path.c_str());
-        
+
                 wrapper_group = m_parameters.findGroup("WRAPPER");
                 if(wrapper_group.isNull()) {
                     printf("GazeboYarpControlBoard::Load  Error: [WRAPPER] group not found in config file\n");
                     return;
                 }
-                yarp::os::ConstString tmp_name = wrapper_group.find("name").asString();
-                tmp_name = yarp::os::ConstString(m_robotName) + "/" + tmp_name;
-                wrapper_group.find("name") = yarp::os::Value(tmp_name);
 
                 configuration_loaded = true;
             }
@@ -90,7 +90,7 @@ GZ_REGISTER_MODEL_PLUGIN(GazeboYarpControlBoard)
 
         m_wrapper.open(wrapper_group);
 
-    
+
         if (!m_wrapper.isValid())
             fprintf(stderr, "GazeboYarpControlBoard: wrapper did not open\n");
         else
