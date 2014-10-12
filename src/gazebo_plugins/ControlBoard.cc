@@ -46,12 +46,12 @@ GZ_REGISTER_MODEL_PLUGIN(GazeboYarpControlBoard)
             return;
         }
         std::cout<<"*** GazeboYarpControlBoard plugin started ***"<<std::endl;
-        
+
         if (!_parent) {
             gzerr << "GazeboYarpControlBoard plugin requires a parent.\n";
             return;
         }
-        
+
         m_robotName = _parent->GetScopedName();
         GazeboYarpPlugins::Handler::getHandler()->setRobot(get_pointer(_parent));
 
@@ -67,10 +67,16 @@ GZ_REGISTER_MODEL_PLUGIN(GazeboYarpControlBoard)
             std::string ini_file_name = _sdf->Get<std::string>("yarpConfigurationFile");
             std::string ini_file_path = gazebo::common::SystemPaths::Instance()->FindFileURI(ini_file_name);
 
-            if (ini_file_path != "" && m_parameters.fromConfigFile(ini_file_path.c_str())) {
-                std::cout << "GazeboYarpControlBoard: Found yarpConfigurationFile: loading from " << ini_file_path << std::endl; 
+            // Prefill the property object with some gazebo-yarp-plugins "Enviromental Variables"
+            // (not using fromConfigFile(const ConstString& fname, Searchable& env, bool wipe) method
+            // because we want the variable defined here to be overwritable by the user configuration file
+            std::string gazeboYarpPluginsRobotName = _parent->GetName();
+            m_parameters.put("gazeboYarpPluginsRobotName",gazeboYarpPluginsRobotName.c_str());
+
+            if (ini_file_path != "" && m_parameters.fromConfigFile(ini_file_path.c_str(),false)) {
+                std::cout << "GazeboYarpControlBoard: Found yarpConfigurationFile: loading from " << ini_file_path << std::endl;
                 m_parameters.put("gazebo_ini_file_path",ini_file_path.c_str());
-        
+
                 wrapper_group = m_parameters.findGroup("WRAPPER");
                 if(wrapper_group.isNull()) {
                     printf("GazeboYarpControlBoard::Load  Error: [WRAPPER] group not found in config file\n");
@@ -78,6 +84,7 @@ GZ_REGISTER_MODEL_PLUGIN(GazeboYarpControlBoard)
                 }
                 configuration_loaded = true;
             }
+
         }
         if (!configuration_loaded) {
             std::cout << "GazeboYarpControlBoard: File .ini not found, quitting\n" << std::endl;
@@ -85,7 +92,7 @@ GZ_REGISTER_MODEL_PLUGIN(GazeboYarpControlBoard)
         }
 
         m_wrapper.open(wrapper_group);
-    
+
         if (!m_wrapper.isValid())
             fprintf(stderr, "GazeboYarpControlBoard: wrapper did not open\n");
         else
@@ -127,6 +134,7 @@ GZ_REGISTER_MODEL_PLUGIN(GazeboYarpControlBoard)
                 m_parameters.put("initialConfiguration", configuration_s.c_str());
                 //std::cout<<configuration_s<<std::endl;
             }
+
             m_controlBoard.open(m_parameters);
 
             if (!m_controlBoard.isValid())
