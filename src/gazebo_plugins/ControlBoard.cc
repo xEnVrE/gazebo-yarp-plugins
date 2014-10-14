@@ -67,11 +67,7 @@ GZ_REGISTER_MODEL_PLUGIN(GazeboYarpControlBoard)
             std::string ini_file_name = _sdf->Get<std::string>("yarpConfigurationFile");
             std::string ini_file_path = gazebo::common::SystemPaths::Instance()->FindFileURI(ini_file_name);
 
-            // Prefill the property object with some gazebo-yarp-plugins "Enviromental Variables"
-            // (not using fromConfigFile(const ConstString& fname, Searchable& env, bool wipe) method
-            // because we want the variable defined here to be overwritable by the user configuration file
-            std::string gazeboYarpPluginsRobotName = _parent->GetName();
-            m_parameters.put("gazeboYarpPluginsRobotName",gazeboYarpPluginsRobotName.c_str());
+             GazeboYarpPlugins::addGazeboEnviromentalVariablesModel(_parent,_sdf,m_parameters);
 
             if (ini_file_path != "" && m_parameters.fromConfigFile(ini_file_path.c_str(),false)) {
                 std::cout << "GazeboYarpControlBoard: Found yarpConfigurationFile: loading from " << ini_file_path << std::endl;

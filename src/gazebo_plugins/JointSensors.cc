@@ -59,6 +59,8 @@ void GazeboYarpJointSensors::Load(physics::ModelPtr _parent, sdf::ElementPtr _sd
         std::string ini_file_name = _sdf->Get<std::string>("yarpConfigurationFile");
         std::string ini_file_path = gazebo::common::SystemPaths::Instance()->FindFileURI(ini_file_name);
 
+        GazeboYarpPlugins::addGazeboEnviromentalVariablesModel(_parent,_sdf,driver_properties);
+
         if( ini_file_path != "" && driver_properties.fromConfigFile(ini_file_path.c_str()) )
         {
             std::cout << "Found yarpConfigurationFile: loading from " << ini_file_path << std::endl;

@@ -8,6 +8,8 @@
 #include <gazebo/physics/Entity.hh>
 #include <gazebo/sensors/sensors.hh>
 
+#include <yarp/os/Property.h>
+
 using namespace gazebo;
 
 namespace GazeboYarpPlugins {
@@ -41,7 +43,7 @@ bool Handler::setRobot(gazebo::physics::Model* _model)
     bool ret = false;
     std::string scopedRobotName = _model->GetScopedName();
     std::cout << "GazeboYarpPlugins::Handler: Inserting Robot : " << scopedRobotName << std::endl;
-    
+
     RobotsMap::iterator robot = m_robotMap.find(scopedRobotName);
     if (robot != m_robotMap.end()) {
         //robot already exists. Increment reference counting
@@ -69,7 +71,7 @@ gazebo::physics::Model* Handler::getRobot(const std::string& robotName) const
 {
     gazebo::physics::Model* tmp = NULL;
     std::cout << "Looking for robot : " << robotName << std::endl;
-    
+
     RobotsMap::const_iterator robot = m_robotMap.find(robotName);
     if (robot != m_robotMap.end()) {
         std::cout << "Robot " << robotName << " was happily found!" << std::endl;
@@ -101,7 +103,7 @@ bool Handler::setSensor(gazebo::sensors::Sensor* _sensor)
     bool ret = false;
     std::string scopedSensorName = _sensor->GetScopedName();
     std::cout << "GazeboYarpPlugins::Handler: Inserting Sensor : " << scopedSensorName << std::endl;
-    
+
     SensorsMap::iterator sensor = m_sensorsMap.find(scopedSensorName);
     if (sensor != m_sensorsMap.end()) {
         //sensor already exists. Increment reference counting
@@ -123,13 +125,13 @@ bool Handler::setSensor(gazebo::sensors::Sensor* _sensor)
     }
     return ret;
 }
-    
+
 // return the sensor pointer given the sensor scoped namespac
 gazebo::sensors::Sensor* Handler::getSensor(const std::string& sensorScopedName) const
 {
     gazebo::sensors::Sensor* tmp = NULL;
     std::cout << "Looking for sensor : " << sensorScopedName << std::endl;
-    
+
     SensorsMap::const_iterator sensor = m_sensorsMap.find(sensorScopedName);
     if (sensor != m_sensorsMap.end()) {
         std::cout << "Sensor " << sensorScopedName << " was happily found!" << std::endl;
@@ -154,4 +156,33 @@ void Handler::removeSensor(const std::string& sensorName)
         std::cout << "Could not remove sensor " << sensorName << ". Sensor was not found" << std::endl;
     }
 }
+
+bool addGazeboEnviromentalVariablesModel(gazebo::physics::ModelPtr _parent,
+                                         sdf::ElementPtr _sdf,
+                                         yarp::os::Property & plugin_parameters)
+{
+    // Prefill the property object with some gazebo-yarp-plugins "Enviromental Variables"
+    // (not using fromConfigFile(const ConstString& fname, Searchable& env, bool wipe) method
+    // because we want the variable defined here to be overwritable by the user configuration file
+    std::string gazeboYarpPluginsRobotName = _parent->GetName();
+    plugin_parameters.put("gazeboYarpPluginsRobotName",gazeboYarpPluginsRobotName.c_str());
+    return true;
+}
+
+
+bool addGazeboEnviromentalVariablesSensor(gazebo::sensors::SensorPtr _parent,
+                                         sdf::ElementPtr _sdf,
+                                         yarp::os::Property & plugin_parameters)
+{
+    // Prefill the property object with some gazebo-yarp-plugins "Enviromental Variables"
+    // (not using fromConfigFile(const ConstString& fname, Searchable& env, bool wipe) method
+    // because we want the variable defined here to be overwritable by the user configuration file
+    std::string gazeboYarpPluginsSensorName = _parent->GetName();
+    plugin_parameters.put("gazeboYarpPluginsSensorName",gazeboYarpPluginsSensorName.c_str());
+    return true;
+}
+
+
+
+
 }

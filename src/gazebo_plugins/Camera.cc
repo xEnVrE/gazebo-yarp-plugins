@@ -20,7 +20,7 @@ GZ_REGISTER_SENSOR_PLUGIN(gazebo::GazeboYarpCamera)
 
 
 namespace gazebo {
-    
+
 GazeboYarpCamera::GazeboYarpCamera() : CameraPlugin(), m_yarp()
 {
     std::cout << "*** GazeboYarpCamera contructor ***" << std::endl;
@@ -39,39 +39,42 @@ void GazeboYarpCamera::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf)
         std::cerr << "GazeboYarpCamera::Load error: yarp network does not seem to be available, is the yarpserver running?"<<std::endl;
         return;
     }
-    
+
     std::cout << "*** GazeboYarpCamera plugin started ***" << std::endl;
-    
+
     if (!_sensor) {
         gzerr << "GazeboYarpCamera plugin requires a CameraSensor." << std::endl;
         return;
     }
 
     _sensor->SetActive(true);
-    
+
     // Add my gazebo device driver to the factory.
     ::yarp::dev::Drivers::factory().add(new ::yarp::dev::DriverCreatorOf< ::yarp::dev::GazeboYarpCameraDriver>
                                         ("gazebo_camera", "grabber", "GazeboYarpCameraDriver"));
-    
-    
+
+
     //Getting .ini configuration file from sdf
     bool configuration_loaded = false;
-    
+
     if (_sdf->HasElement("yarpConfigurationFile")) {
         std::string ini_file_name = _sdf->Get<std::string>("yarpConfigurationFile");
         std::string ini_file_path = gazebo::common::SystemPaths::Instance()->FindFileURI(ini_file_name);
-        
+
+        //GazeboYarpPlugins::addGazeboEnviromentalVariablesModel(_model,_sdf,driver_properties);
+        GazeboYarpPlugins::addGazeboEnviromentalVariablesSensor(_sensor,_sdf,m_parameters);
+
         if (ini_file_path != "" && m_parameters.fromConfigFile(ini_file_path.c_str())) {
             std::cout << "Found yarpConfigurationFile: loading from " << ini_file_path << std::endl;
             configuration_loaded = true;
         }
     }
-    
+
     if (!configuration_loaded) {
         std::cout << "File .ini not found, quitting" << std::endl;
         return;
     }
-    
+
     m_sensorName = _sensor->GetScopedName();
     m_sensor = (gazebo::sensors::CameraSensor*)_sensor.get();
     if(m_sensor == NULL)
@@ -86,16 +89,16 @@ void GazeboYarpCamera::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf)
     std::cout << "sensor scoped name is " << m_sensorName.c_str() << std::endl;
     //Insert the pointer in the singleton handler for retriving it in the yarp driver
     GazeboYarpPlugins::Handler::getHandler()->setSensor(_sensor.get());
-    
+
     m_parameters.put(YarpScopedName.c_str(), m_sensorName.c_str());
-    
+
     //Open the driver
     if (m_cameraDriver.open(m_parameters)) {
         std::cout << "Loaded GazeboYarpCamera Plugin correctly" << std::endl;
     } else {
         std::cout << "GazeboYarpCamera Plugin Load failed: error in opening yarp driver" << std::endl;
     }
-    
+
     std::cout << "Trying to get the GazeboYarpCameraDriver interface from the device" << std::endl;
 
     m_cameraDriver.view(iFrameGrabberImage);
@@ -108,5 +111,5 @@ void GazeboYarpCamera::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf)
     std::cout << "GazeboYarpCamera parameters" << std::endl;
     std::cout << m_parameters.toString() << std::endl;
 }
-    
+
 }
