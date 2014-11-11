@@ -9,8 +9,8 @@
 
 namespace yarp {
     namespace dev {
-        
-        bool GazeboYarpControlBoardDriver::setOutput(int j, double v)
+
+        bool GazeboYarpControlBoardDriver::setRefOutput(int j, double v)
         {
             if (j >= 0 && j < (int)m_numberOfJoints) {
                 m_referenceTorques[j] = v;
@@ -18,7 +18,8 @@ namespace yarp {
             }
             return false;
         }
-        bool GazeboYarpControlBoardDriver::setOutputs(const double* v)
+
+        bool GazeboYarpControlBoardDriver::setRefOutputs(const double* v)
         {
             if (!v) return false;
             for (unsigned int j = 0; j < m_numberOfJoints; ++j) {
@@ -26,7 +27,7 @@ namespace yarp {
             }
             return true;
         }
-        
+
         bool GazeboYarpControlBoardDriver::getOutput(int j, double *v)
         {
             if (v && j >= 0 && j < (int)m_numberOfJoints) {
@@ -35,23 +36,42 @@ namespace yarp {
             }
             return false;
         }
-        
+
         bool GazeboYarpControlBoardDriver::getOutputs(double *v)
         {
             if (!v) return false;
-            for(unsigned int j = 0; j < m_numberOfJoints; ++j) {
+            for (unsigned int j = 0; j < m_numberOfJoints; ++j) {
                 v[j] = m_torques[j];
             }
             return true;
         }
-        
-        bool GazeboYarpControlBoardDriver::setOpenLoopMode()
+
+        bool GazeboYarpControlBoardDriver::getRefOutput(int j, double *v)
         {
-            for(unsigned int j = 0; j < m_numberOfJoints; j++) {
-                this->setOpenLoopMode(j);
+            if (v && j >= 0 && j < (int)m_numberOfJoints) {
+                *v = m_referenceTorques[j];
+                return true;
+            }
+            return false;
+        }
+
+        bool GazeboYarpControlBoardDriver::getRefOutputs(double *v)
+        {
+            if (!v) return false;
+            for (unsigned int j = 0; j < m_numberOfJoints; ++j) {
+                v[j] = m_referenceTorques[j];
             }
             return true;
         }
-        
+
+        bool GazeboYarpControlBoardDriver::setOpenLoopMode()
+        {
+            bool ret = true;
+            for (unsigned int j = 0; j < m_numberOfJoints; j++) {
+                ret = ret && this->setControlMode(j, VOCAB_CM_OPENLOOP);
+            }
+            return ret;
+        }
+
     }
 }

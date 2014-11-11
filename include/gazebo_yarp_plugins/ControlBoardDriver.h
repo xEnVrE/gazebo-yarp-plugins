@@ -14,10 +14,12 @@
 #include <yarp/dev/IOpenLoopControl.h>
 #include <yarp/dev/ControlBoardInterfacesImpl.h>
 #include <yarp/dev/ControlBoardInterfaces.h>
-#include <yarp/dev/IControlMode.h>
+#include <yarp/dev/IControlMode2.h>
+#include <yarp/dev/IInteractionMode.h>
 #include <yarp/sig/Vector.h>
 #include <yarp/os/Time.h>
 #include <yarp/os/Semaphore.h>
+#include <yarp/os/Stamp.h>
 #include <string>
 #include <vector>
 
@@ -35,24 +37,24 @@ namespace gazebo {
     namespace common {
         class UpdateInfo;
     }
-    
+
     namespace physics {
         class Model;
     }
-    
+
     namespace event {
         class Connection;
         typedef boost::shared_ptr<Connection> ConnectionPtr;
     }
-    
+
     namespace transport {
         class Node;
         class Publisher;
-        
+
         typedef boost::shared_ptr<Node> NodePtr;
         typedef boost::shared_ptr<Publisher> PublisherPtr;
     }
-    
+
     namespace msgs {
         class JointCmd;
     }
@@ -66,8 +68,9 @@ class yarp::dev::GazeboYarpControlBoardDriver:
     public IEncodersTimed,
     public IControlCalibration2,
     public IControlLimits2,
+    public IInteractionMode,
     public DeviceResponder,
-    public IControlMode,
+    public IControlMode2,
     public ITorqueControl,
     public IPositionDirect,
     public IImpedanceControl,
@@ -163,6 +166,12 @@ public:
     virtual bool setImpedanceVelocityMode(int j); //NOT IMPLEMENTED
     virtual bool setOpenLoopMode(int j); //NOT IMPLEMENTED
 
+    // CONTROL MODE 2
+    virtual bool getControlModes(const int n_joint, const int *joints, int *modes);
+    virtual bool setControlMode(const int j, const int mode);
+    virtual bool setControlModes(const int n_joint, const int *joints, int *modes);
+    virtual bool setControlModes(int *modes);
+
     //TORQUE CONTROL
     virtual bool setRefTorque(int j, double t); //NOT TESTED
     virtual bool setRefTorques(const double *t); //NOT TESTED
@@ -201,14 +210,10 @@ public:
     virtual bool getCurrentImpedanceLimit(int j, double *min_stiff, double *max_stiff, double *min_damp, double *max_damp);
 
     //IOpenLoopControl interface methods
-    /**
-     * Command direct output value to joint j. Currently this is a torque
-     * \param j joint number
-     * \param v value to be set
-     * \return true if the operation succeeded. False otherwise
-     */
-    virtual bool setOutput(int j, double v);
-    virtual bool setOutputs(const double *v);
+    virtual bool setRefOutput(int j, double v);
+    virtual bool setRefOutputs(const double *v);
+    virtual bool getRefOutput(int j, double *v);
+    virtual bool getRefOutputs(double *v);
     virtual bool getOutput(int j, double *v);
     virtual bool getOutputs(double *v);
     virtual bool setOpenLoopMode();
@@ -266,6 +271,14 @@ public:
     bool setPositions(const int n_joint, const int *joints, double *refs);
     bool setPositions(const double *refs);
 
+    // INTERACTION MODE interface
+    bool getInteractionMode(int axis, yarp::dev::InteractionModeEnum* mode);
+    bool getInteractionModes(int n_joints, int *joints, yarp::dev::InteractionModeEnum* modes);
+    bool getInteractionModes(yarp::dev::InteractionModeEnum* modes);
+    bool setInteractionMode(int axis, yarp::dev::InteractionModeEnum mode);
+    bool setInteractionModes(int n_joints, int *joints, yarp::dev::InteractionModeEnum* modes);
+    bool setInteractionModes(yarp::dev::InteractionModeEnum* modes);
+
 private:
 
     /* PID structures */
@@ -283,7 +296,7 @@ private:
         PIDFeedbackTermDerivativeTerm = 1 << 2,
         PIDFeedbackTermAllTerms = PIDFeedbackTermProportionalTerm | PIDFeedbackTermIntegrativeTerm | PIDFeedbackTermDerivativeTerm
     };
-    
+
     struct Range {
         Range() : min(0), max(0){}
         double min;
@@ -292,34 +305,41 @@ private:
 
     gazebo::physics::Model* m_robot;
     gazebo::event::ConnectionPtr m_updateConnection;
-    
+
     yarp::os::Property m_pluginParameters; /*<! Contains the parameters of the device contained in the yarpConfigurationFile .ini file */
-    
+
     unsigned int m_robotRefreshPeriod; //ms
     unsigned int m_numberOfJoints; /*<! number of joints controlled by the control board */
     std::vector<Range> m_jointLimits;
-    
+
     /**
      * The zero position is the position of the GAZEBO joint that will be read as the starting one
      * i.e. getEncoder(j)=m_zeroPosition+gazebo.getEncoder(j);
      */
     yarp::sig::Vector m_zeroPosition;
-    
-    yarp::sig::Vector m_positions; /*<! joint positions */
-    yarp::sig::Vector m_velocities; /*<! joint velocities */
-    yarp::sig::Vector m_torques; /*<! joint torques */
+
+    yarp::sig::Vector m_positions; /*<! joint positions [Degrees] */
+    yarp::sig::Vector m_velocities; /*<! joint velocities [Degrees/Seconds] */
+    yarp::sig::Vector m_torques; /*<! joint torques [Netwon Meters] */
+
+    yarp::os::Stamp m_lastTimestamp; /*<! timestamp, updated with simulation time at each onUpdate call */
 
     yarp::sig::Vector amp;
-    
+
     //Desired Control variables
-    yarp::sig::Vector m_referencePositions; /*<! desired reference positions. Depending on the position mode, they can be set directly or indirectly through the trajectory generator */
-    yarp::sig::Vector m_referenceTorques; /*<! desired reference torques for torque control mode */
-    yarp::sig::Vector m_referenceVelocities; /*<! desired reference velocities for velocity control mode */
+    yarp::sig::Vector m_referencePositions; /*<! desired reference positions.
+                                                 Depending on the position mode,
+                                                 they can be set directly or indirectly
+                                                 through the trajectory generator.
+                                                 [Degrees] */
+
+    yarp::sig::Vector m_referenceTorques; /*<! desired reference torques for torque control mode [NetwonMeters] */
+    yarp::sig::Vector m_referenceVelocities; /*<! desired reference velocities for velocity control mode [Degrees/Seconds] */
 
     //trajectory generator
-    yarp::sig::Vector m_trajectoryGenerationReferencePosition; /*<! reference position for trajectory generation in position mode */
-    yarp::sig::Vector m_trajectoryGenerationReferenceSpeed; /*<! reference speed for trajectory generation in position mode */
-    yarp::sig::Vector m_trajectoryGenerationReferenceAcceleraton; /*<! reference acceleration for trajectory generation in position mode. Currently NOT USED in trajectory generation! */
+    yarp::sig::Vector m_trajectoryGenerationReferencePosition; /*<! reference position for trajectory generation in position mode [Degrees] */
+    yarp::sig::Vector m_trajectoryGenerationReferenceSpeed; /*<! reference speed for trajectory generation in position mode [Degrees/Seconds]*/
+    yarp::sig::Vector m_trajectoryGenerationReferenceAcceleraton; /*<! reference acceleration for trajectory generation in position mode. Currently NOT USED in trajectory generation! [Degrees/Seconds^2] */
 
     std::vector<std::string> m_jointNames;
     gazebo::transport::NodePtr m_gazeboNode;
@@ -336,6 +356,8 @@ private:
 
     bool* m_isMotionDone;
     int * m_controlMode;
+    int * m_interactionMode;
+
     bool started;
     int m_clock;
     int _T_controller;
