@@ -8,8 +8,9 @@
 #define GAZEBOYARP_OBJECTS_HH
 
 #include <gazebo/common/Plugin.hh>
+#include <gazebo/common/UpdateInfo.hh>
+#include </gazebo/physics/PhysicsTypes.hh>
 #include <yarp/os/Network.h>
-#include <gazebo-4.1/gazebo/physics/PhysicsTypes.hh>
 
 namespace yarp {
     namespace os {
@@ -41,22 +42,28 @@ namespace gazebo
 
         virtual bool detach(const std::string& object_name);
 
+        void OnUpdate(const common::UpdateInfo & /*_info*/);
+
     private:
         void cleanup();
 
         yarp::os::Network m_network;
         std::string m_portName;
+        std::string object_name_attach,link_name_attach;
 
         physics::ModelPtr m_model;
         physics::WorldPtr m_world;
 
-        //std::map< std::string , physics::LinkPtr > objects_link_map;
+        std::map< std::string , std::string > objects_map;
+        bool to_attach_0, to_attach_1;
 
         //RPC variables
         yarp::os::Port *m_rpcPort;
         ObjectsServer *m_clockServer;
         std::map<std::string, physics::JointPtr> joints_attached;
 
+        // Pointer to the update event connection
+        private: event::ConnectionPtr updateConnection;
     };
 }
 
