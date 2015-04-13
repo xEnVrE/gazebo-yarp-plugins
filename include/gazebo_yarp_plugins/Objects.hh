@@ -25,6 +25,20 @@ namespace yarp {
 namespace gazebo
 {
     class ObjectsServer;
+    
+    struct grasp_info
+    {
+        std::string link_name;
+        std::string object_name;
+        std::string handle_name;
+        std::string filter_name;
+        physics::JointPtr joint_attached_to_object;
+        physics::JointPtr joint_attached_to_model;
+        physics::LinkPtr handle_link;
+        std::vector<std::string> collisions_str;
+        transport::SubscriberPtr contactSub;
+        bool grasped;
+    };
 
     class GazeboYarpObjects : public ModelPlugin
     {
@@ -39,12 +53,11 @@ namespace gazebo
 
         virtual bool attach(const std::string& link_name, const std::string& object_name);
 
-        virtual bool detach(const std::string& object_name);
+        virtual bool detach(const std::string& link_name, const std::string& object_name);
 
     private:
         void cleanup();
-        std::vector<std::string> collisions_str;
-        bool createHandle();
+        bool createHandle(std::string link_name);
         
         /// \brief Callback for contact messages from the physics engine.
         void OnContacts(ConstContactsPtr &_msg);
@@ -56,14 +69,11 @@ namespace gazebo
         physics::WorldPtr m_world;
         bool attach_impl(std::string link_name, std::string object_name, gazebo::math::Pose touch_point, gazebo::math::Vector3 normal);
         
-        std::map< std::string,std::string> link_object_map;
-        transport::SubscriberPtr contactSub;
         transport::NodePtr node;
         //RPC variables
         yarp::os::Port *m_rpcPort;
         ObjectsServer *m_clockServer;
-        std::map<std::string, physics::JointPtr> joints_attached;
-        std::map<std::string, physics::LinkPtr> attached_links;
+        std::vector<grasp_info> grasps;
         sdf::ElementPtr m_sdf;
     };
 }

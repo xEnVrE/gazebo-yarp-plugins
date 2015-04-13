@@ -18,9 +18,9 @@ bool ObjectsServerImpl::attach(const std::string& link_name, const std::string& 
     return m_objects.attach(link_name, object_name);
 }
 
-bool ObjectsServerImpl::detach(const std::string& object_name)
+bool ObjectsServerImpl::detach(const std::string& link_name, const std::string& object_name)
 {
-    return m_objects.detach(object_name);
+    return m_objects.detach(link_name, object_name);
 }
 
 }

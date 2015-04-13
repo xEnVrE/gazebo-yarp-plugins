@@ -24,10 +24,11 @@ public:
 
     /**
      * Detach an object from the links it was attached to
+     * @param link_name Name of the link
      * @param object_name Name of the object
      * @return true if success, false otherwise
      */
-    virtual bool detach(const std::string& object_name);
+    virtual bool detach(const std::string& link_name, const std::string& object_name);
 private:
 
     GazeboYarpObjects& m_objects;

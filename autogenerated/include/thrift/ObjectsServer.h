@@ -24,10 +24,11 @@ public:
   virtual bool attach(const std::string& link_name, const std::string& object_name);
   /**
    * Detaches an object to a link of the robot.
+   * @param link_name Name of the link
    * @param object_name Name of the object
    * @return true if success, false otherwise
    */
-  virtual bool detach(const std::string& object_name);
+  virtual bool detach(const std::string& link_name, const std::string& object_name);
   virtual bool read(yarp::os::ConnectionReader& connection);
   virtual std::vector<std::string> help(const std::string& functionName="--all");
 };

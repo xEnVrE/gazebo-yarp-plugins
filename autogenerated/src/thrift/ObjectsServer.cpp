@@ -33,12 +33,14 @@ public:
 
 class ObjectsServer_detach : public yarp::os::Portable {
 public:
+  std::string link_name;
   std::string object_name;
   bool _return;
   virtual bool write(yarp::os::ConnectionWriter& connection) {
     yarp::os::idl::WireWriter writer(connection);
-    if (!writer.writeListHeader(2)) return false;
+    if (!writer.writeListHeader(3)) return false;
     if (!writer.writeTag("detach",1,1)) return false;
+    if (!writer.writeString(link_name)) return false;
     if (!writer.writeString(object_name)) return false;
     return true;
   }
@@ -64,12 +66,13 @@ bool ObjectsServer::attach(const std::string& link_name, const std::string& obje
   bool ok = yarp().write(helper,helper);
   return ok?helper._return:_return;
 }
-bool ObjectsServer::detach(const std::string& object_name) {
+bool ObjectsServer::detach(const std::string& link_name, const std::string& object_name) {
   bool _return = false;
   ObjectsServer_detach helper;
+  helper.link_name = link_name;
   helper.object_name = object_name;
   if (!yarp().canWrite()) {
-    fprintf(stderr,"Missing server method '%s'?\n","bool ObjectsServer::detach(const std::string& object_name)");
+    fprintf(stderr,"Missing server method '%s'?\n","bool ObjectsServer::detach(const std::string& link_name, const std::string& object_name)");
   }
   bool ok = yarp().write(helper,helper);
   return ok?helper._return:_return;
@@ -104,13 +107,18 @@ bool ObjectsServer::read(yarp::os::ConnectionReader& connection) {
       return true;
     }
     if (tag == "detach") {
+      std::string link_name;
       std::string object_name;
+      if (!reader.readString(link_name)) {
+        reader.fail();
+        return false;
+      }
       if (!reader.readString(object_name)) {
         reader.fail();
         return false;
       }
       bool _return;
-      _return = detach(object_name);
+      _return = detach(link_name,object_name);
       yarp::os::idl::WireWriter writer(reader);
       if (!writer.isNull()) {
         if (!writer.writeListHeader(1)) return false;
@@ -166,8 +174,9 @@ std::vector<std::string> ObjectsServer::help(const std::string& functionName) {
       helpString.push_back("@return true if success, false otherwise ");
     }
     if (functionName=="detach") {
-      helpString.push_back("bool detach(const std::string& object_name) ");
+      helpString.push_back("bool detach(const std::string& link_name, const std::string& object_name) ");
       helpString.push_back("Detaches an object to a link of the robot. ");
+      helpString.push_back("@param link_name Name of the link ");
       helpString.push_back("@param object_name Name of the object ");
       helpString.push_back("@return true if success, false otherwise ");
     }
