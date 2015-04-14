@@ -214,7 +214,7 @@ bool gazebo::GazeboYarpObjects::attach(const std::string& link_name, const std::
     result_grasp.link_name=link_name;
     createHandle(link_name);
     result_grasp.handle_name= std::string("object_handle_").append(link_name);
-    gazebo::physics::Collision_V collisions=  parent_link->GetCollisions();//TODO remove them from collision_str
+    gazebo::physics::Collision_V collisions=  parent_link->GetCollisions();
     for (int j=0;j<collisions.size();j++)
     {
         result_grasp.collisions_str.push_back(collisions[j]->GetScopedName());
@@ -261,16 +261,18 @@ bool GazeboYarpObjects::attach_impl(std::string link_name,std::string object_nam
     }
 
     
-    if (current_grasp.link_name=="LWrMot3")
-    {
-        physics::LinkPtr link = getLinkInModel(m_model,"LWrMot2");
-        link->SetCollideMode("none");
-    }
-    if (current_grasp.link_name=="RWrMot3")
-    {
-        physics::LinkPtr link = getLinkInModel(m_model,"RWrMot2");
-        link->SetCollideMode("none");
-    }
+//     if (current_grasp.link_name=="LWrMot3")
+//     {
+//         physics::LinkPtr link = getLinkInModel(m_model,"LWrMot2");
+//         if (link)
+//             link->SetCollideMode("none");
+//     }
+//     if (current_grasp.link_name=="RWrMot3")
+//     {
+//         physics::LinkPtr link = getLinkInModel(m_model,"RWrMot2");
+//         if (link)
+//             link->SetCollideMode("none");
+//     }
     
     parent_link->SetCollideMode("none");
 //     attached_links[object_name]=parent_link;
@@ -288,8 +290,7 @@ bool GazeboYarpObjects::attach_impl(std::string link_name,std::string object_nam
     }
     current_grasp.joint_attached_to_object=object_joint;
     
-    physics::LinkPtr object_link = getLinkInModel(object_model,"link");
-
+    physics::LinkPtr object_link = getClosestLinkInModel(object_model,parent_link_pose);// getLinkInModel(object_model,"link");
     object_joint->SetName(object_name+"_attached_handle_joint");
     object_joint->Load(object_link, object_handle_link, math::Pose());
     object_joint->Attach(object_link, object_handle_link);
@@ -314,6 +315,7 @@ bool GazeboYarpObjects::attach_impl(std::string link_name,std::string object_nam
     joint->SetHighStop(0, 0);
     joint->SetLowStop(0, 0);
     //joint->SetParam("cfm", 0, 0);
+    std::cout<<"Grasped!"<<std::endl;
     current_grasp.grasped=true;
     return true;
 }
@@ -324,34 +326,64 @@ void GazeboYarpObjects::OnContacts(ConstContactsPtr& iter)
     std::string collision, object;
     for (int j=0; j < (iter)->contact_size(); ++j)
     {
+        
         collision = (iter)->contact(j).collision1();
         object = (iter)->contact(j).collision2();
-        
+        if (!object.find_first_of("::"))
+        {
+            std::cout<<"error in searching for object name in "<<object<<std::endl;
+            return;
+        }
+        object=object.substr(0,object.find_first_of("::"));
+//         std::cout<<collision<<" "<<object<<std::endl;
+        bool found=false;
         for (int i = 0; i < grasps.size(); i++)
         {
             if (grasps[i].grasped) continue;
-            if (collision == grasps[i].link_name && object == grasps[i].object_name)
+//             std::cout<<grasps[i].link_name<<" "<<grasps[i].object_name<<std::endl;
+            if (object == grasps[i].object_name)
             {
-               //Ok like this, do nothing
+                for (int k=0;k<grasps[i].collisions_str.size();k++)
+                {
+                    if (collision == grasps[i].collisions_str[k])
+                    {
+                        collision = grasps[i].link_name;
+                        found=true;
+                        break;
+                        //Ok like this, do what is needed
+                    }
+                }
             }
-            else if (object == grasps[i].link_name && collision == grasps[i].object_name)
+            else if (collision == grasps[i].object_name)
             {
-                //Swap them
-                collision=grasps[i].link_name;
-                object=grasps[i].object_name;
+                for (int k=0;k<grasps[i].collisions_str.size();k++)
+                {
+                    if (object == grasps[i].collisions_str[k])
+                    {
+                        //Swap them
+                        collision = grasps[i].link_name;
+                        object = grasps[i].object_name;
+                        found=true;
+                        break;
+                    }
+                }
             }
-            else continue;
-            std::cout<<(iter)->contact(j).position(0).x()<<(iter)->contact(j).position(0).y()<<(iter)->contact(j).position(0).z()<<std::endl;
-            gazebo::math::Pose touch_point;
-            touch_point.pos.x=(iter)->contact(j).position(0).x();
-            touch_point.pos.y=(iter)->contact(j).position(0).y();
-            touch_point.pos.z=(iter)->contact(j).position(0).z();
-            math::Vector3 normal;
-            normal.x=(iter)->contact(j).position(0).x();
-            normal.y=(iter)->contact(j).position(0).y();
-            normal.z=(iter)->contact(j).position(0).z();
-            attach_impl(collision,object,touch_point,normal);
-            break;
+            if (found) break;
+        }
+        if (found)
+        {
+//         std::cout<<(iter)->contact(j).position(0).x()<<" "<<(iter)->contact(j).position(0).y()<<" "<<(iter)->contact(j).position(0).z()<<std::endl;
+        gazebo::math::Pose touch_point;
+        touch_point.pos.x=(iter)->contact(j).position(0).x();
+        touch_point.pos.y=(iter)->contact(j).position(0).y();
+        touch_point.pos.z=(iter)->contact(j).position(0).z();
+        math::Vector3 normal;
+        normal.x=(iter)->contact(j).position(0).x();
+        normal.y=(iter)->contact(j).position(0).y();
+        normal.z=(iter)->contact(j).position(0).z();
+//         std::cout<<collision<<" "<<object<<std::endl;
+        attach_impl(collision,object,touch_point,normal);
+        return;
         }
     }
     return;
@@ -442,18 +474,18 @@ bool gazebo::GazeboYarpObjects::detach(const std::string& link_name, const std::
         current_grasp.joint_attached_to_model->Detach();
         current_grasp.joint_attached_to_object->Detach();
     }
-    if (current_grasp.link_name=="LWrMot3")
-    {
-        physics::LinkPtr link = getLinkInModel(m_model,"LWrMot2");
-        if (link)
-            link->SetCollideMode("all");
-    }
-    if (current_grasp.link_name=="RWrMot3")
-    {
-        physics::LinkPtr link = getLinkInModel(m_model,"RWrMot2");
-        if (link)
-            link->SetCollideMode("all");
-    }
+//     if (current_grasp.link_name=="LWrMot3")
+//     {
+//         physics::LinkPtr link = getLinkInModel(m_model,"LWrMot2");
+//         if (link)
+//             link->SetCollideMode("all");
+//     }
+//     if (current_grasp.link_name=="RWrMot3")
+//     {
+//         physics::LinkPtr link = getLinkInModel(m_model,"RWrMot2");
+//         if (link)
+//             link->SetCollideMode("all");
+//     }
     physics::LinkPtr parent_link = getLinkInModel(m_model,current_grasp.link_name);
     
     if( !parent_link ) {
