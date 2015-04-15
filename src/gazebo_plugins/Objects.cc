@@ -100,6 +100,19 @@ bool gazebo::GazeboYarpObjects::createHandle(std::string link_name)
                     </box>\
                 </geometry>\
             </collision>\
+            <visual name='marker'>\
+            <geometry>\
+            <box>\
+            <size>0.02 0.02 0.02</size>\
+            </box>\
+            </geometry>\
+            <material>\
+            <script>\
+            <name>Gazebo/Blue</name>\
+            <uri>__default__</uri>\
+            </script>\
+            </material>\
+            </visual>\
             <inertial>\
                 <mass>0.00001</mass>\
                 <inertia>\
