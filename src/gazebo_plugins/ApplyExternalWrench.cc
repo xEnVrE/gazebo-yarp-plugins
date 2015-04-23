@@ -17,6 +17,9 @@ ApplyExternalWrench::ApplyExternalWrench()
     this->m_wrenchToApply.torque.resize ( 3,0 );
     this->m_duration = 0;
     timeIni = 0;
+
+    // Writing applied force values
+     m_forcePort.open("/applyWrench/force");
 }
 ApplyExternalWrench::~ApplyExternalWrench()
 {
@@ -31,6 +34,8 @@ void ApplyExternalWrench::UpdateChild()
 {
     // Reading apply wrench command
     yarp::os::Bottle tmpBottle;
+    yarp::os::Bottle    m_forceBottle;
+
 
     // Copying command
     this->m_lock.lock();
@@ -48,6 +53,8 @@ void ApplyExternalWrench::UpdateChild()
     for ( int i=4; i<7; i++ ) {
         m_wrenchToApply.torque[i-4] = tmpBottle.get ( i ).asDouble();
     }
+
+    m_frequency = tmpBottle.get( 8 ).asDouble();
 
     std::string fullScopeLinkName = "";
     if(this->m_subscope!="") {
@@ -73,8 +80,8 @@ void ApplyExternalWrench::UpdateChild()
     this->m_duration = tmpBottle.get ( 7 ).asDouble();
 
     // Copying command to force and torque Vector3 variables
-    math::Vector3 force ( this->m_wrenchToApply.force[0], this->m_wrenchToApply.force[1], this->m_wrenchToApply.force[2] );
-    math::Vector3 torque ( this->m_wrenchToApply.torque[0], this->m_wrenchToApply.torque[1], this->m_wrenchToApply.torque[2] );
+   // math::Vector3 force ( this->m_wrenchToApply.force[0], this->m_wrenchToApply.force[1], this->m_wrenchToApply.force[2] );
+    //math::Vector3 torque ( this->m_wrenchToApply.torque[0], this->m_wrenchToApply.torque[1], this->m_wrenchToApply.torque[2] );
 
     // Taking duration of the applied force into account
     static bool applying_force_flag = 0;
@@ -89,15 +96,89 @@ void ApplyExternalWrench::UpdateChild()
     // This has to be done during the specified duration
     if ( applying_force_flag && ( time_current - timeIni ) < this->m_duration ) {
 //         printf ( "Applying external force on the robot for %f seconds...\n", this->m_duration );
-        this->m_onLink->AddForce ( force );
+
+
+
+        double t = time_current - timeIni;
+        double t_min = 0;
+        double t_max = this->m_duration;
+        double t_edge = t_max - (m_duration/5);
+
+        //mapping the range of forces (min-to-max/ max-to-min) to the duration of simulation
+
+        double out_min = 0;
+        double out_max = 1.57;
+
+        double rel_y_min = 0;
+        double rel_y_max = 0.035;
+
+        double rel_z_min = 0;
+        double rel_z_max = 0.015;
+
+        double rel_y;
+        double rel_z;
+
+        if(t < t_edge){
+         rel_y = rel_y_min + ((rel_y_max - rel_y_min) / (t_edge - t_min)) * (t - t_min);
+         rel_z = rel_z_min + ((rel_z_max - rel_z_min) / (t_edge - t_min)) * (t - t_min);
+        }
+        if(t >= t_edge){rel_y = rel_y_max; rel_z=rel_z_max;}
+
+        double out = out_min + ((out_max - out_min) / (t_max - t_min)) * (t - t_min);
+
+         //generate random noise value between 
+        double min = 0;
+        double max = 3;
+        double noise = min + (rand() % (int)(max - min + 1));
+      // printf("%2f\n",rel_z);
+           //Apply a time varying sinusoidal force
+  
+        //decreasing force
+  //math::Vector3 force ( this->m_wrenchToApply.force[0]*cos((m_frequency*out))-(noise/10), this->m_wrenchToApply.force[1]*cos((m_frequency*out))-(noise/10), this->m_wrenchToApply.force[2]*cos((m_frequency*out))-noise );
+  
+       //increasing force
+  math::Vector3 force ( this->m_wrenchToApply.force[0]*sin((m_frequency*out))-(noise/10), this->m_wrenchToApply.force[1]*sin((m_frequency*out))-(noise/10), this->m_wrenchToApply.force[2]*sin((m_frequency*out))-noise );
+     
+        //increasing ramp
+   // math::Vector3 force ( this->m_wrenchToApply.force[0]*t/(t_max - t_min)-(noise/10), this->m_wrenchToApply.force[1]*t/(t_max - t_min)-(noise/10), this->m_wrenchToApply.force[2]*t/(t_max - t_min)-noise );
+  
+  //math::Vector3 force ( this->m_wrenchToApply.force[0], this->m_wrenchToApply.force[1], this->m_wrenchToApply.force[2] );
+  math::Vector3 torque ( this->m_wrenchToApply.torque[0], this->m_wrenchToApply.torque[1], this->m_wrenchToApply.torque[2] );
+
+    m_forceBottle.addDouble( force[0] );
+    m_forceBottle.addDouble( force[1] );
+    m_forceBottle.addDouble( force[2] );
+
+    m_forcePort.write(m_forceBottle);
+
+
+    //math::Vector3 rel = math::Vector3( 0.075, 0.035, 0.015 ); //hard-coded for collision box of l_foot,r_foot
+       math::Vector3 rel = math::Vector3( 0.0, rel_y, rel_z );
+   // math::Vector3 rel = math::Vector3( 0.0, 0.035, 0.015);
+
+        this->m_onLink->AddForceAtRelativePosition (force, rel);
+        //this->m_onLink->AddForce ( force );
         this->m_onLink->AddTorque ( torque );
         math::Vector3 linkCoGPos = this->m_onLink->GetWorldCoGPose().pos; // Get link's COG position where wrench will be applied
+        
+
+       
+        //Transformation to visualize the applied wrench at a relative position from the CoG
+        math::Quaternion linkCoGRot = this->m_onLink->GetWorldCoGPose().rot;
+        math::Matrix4 linkTransform = linkCoGRot.GetAsMatrix4();
+        linkTransform.SetTranslate(linkCoGPos);
+        math::Vector3 ForceContactPos = linkTransform*rel;
+
+      
+
+
         math::Vector3 newZ = force.Normalize(); // normalized force. I want the z axis of the cylinder's reference frame to coincide with my force vector
         math::Vector3 newX = newZ.Cross ( math::Vector3::UnitZ );
         math::Vector3 newY = newZ.Cross ( newX );
         math::Matrix4 rotation = math::Matrix4 ( newX[0],newY[0],newZ[0],0,newX[1],newY[1],newZ[1],0,newX[2],newY[2],newZ[2],0, 0, 0, 0, 1 );
         math::Quaternion forceOrientation = rotation.GetRotation();
-        math::Pose linkCoGPose ( linkCoGPos - rotation*math::Vector3 ( 0,0,.15 ), forceOrientation );
+        //math::Pose linkCoGPose ( linkCoGPos - rotation*math::Vector3 ( 0,0,.15 ), forceOrientation );
+        math::Pose linkCoGPose ( ForceContactPos - rotation*math::Vector3 ( 0,0,.15 ), forceOrientation );
         msgs::Set ( m_visualMsg.mutable_pose(), linkCoGPose );
         msgs::Set ( m_visualMsg.mutable_material()->mutable_ambient(),common::Color ( 1,0,0,0.3 ) );
         m_visualMsg.set_visible ( 1 );
@@ -259,7 +340,10 @@ bool RPCServerThread::threadInit()
     m_cmd.addDouble ( 0 ); // Torque coord. z
     m_cmd.addDouble ( 0 ); // Wrench duration
 
-    this->m_durationBuffer = m_cmd.get ( 7 ).asDouble();
+    m_cmd.addDouble ( 0 ); // Angular frequency for a time varying force
+
+
+    this->m_durationBuffer = m_cmd.get ( 8 ).asDouble();
 
     return true;
 }
@@ -271,19 +355,22 @@ void RPCServerThread::run()
         if ( command.get ( 0 ).asString() == "help" ) {
             this->m_reply.addVocab ( yarp::os::Vocab::encode ( "many" ) );
             this->m_reply.addString ( "Insert a command with the following format:" );
-            this->m_reply.addString ( "[link] [force] [torque] [duration]" );
-            this->m_reply.addString ( "e.g. chest 10 0 0 0 0 0 1");
+            this->m_reply.addString ( "[link] [force] [torque] [duration] [frequency]" );
+            this->m_reply.addString ( "e.g. chest 10 0 0 0 0 0 1 20");
             this->m_reply.addString ( "[link]:     (string) Link ID of the robot as specified in robot's SDF" );
             this->m_reply.addString ( "[force]:    (double x, y, z) Force components in N w.r.t. world reference frame" );
             this->m_reply.addString ( "[torque]:   (double x, y, z) Torque components in N.m w.r.t world reference frame" );
             this->m_reply.addString ( "[duration]: (double) Duration of the applied force in seconds" );
+            
+            this->m_reply.addString ( "[frequency]: (double) Angular frequency for a time varying sinusoidal force fsin(wt)" );
+
             this->m_reply.addString ( "Note: The reference frame is the base/root robot frame with x pointing backwards and z upwards.");
             this->m_rpcPort.reply ( this->m_reply );
         } else {
             if ( command.get ( 0 ).isString() \
                     && ( command.get ( 1 ).isDouble() || command.get ( 1 ).isInt() )  && ( command.get ( 2 ).isDouble() || command.get ( 2 ).isInt() ) && ( command.get ( 3 ).isDouble() || command.get ( 3 ).isInt() ) \
                     && ( command.get ( 4 ).isDouble() || command.get ( 4 ).isInt() )  && ( command.get ( 5 ).isDouble() || command.get ( 5 ).isInt() ) && ( command.get ( 6 ).isDouble() || command.get ( 6 ).isInt() )  \
-                    && ( command.get ( 7 ).isDouble() || command.get ( 7 ).isInt() ) ) {
+                    && ( command.get ( 7 ).isDouble() || command.get ( 7 ).isInt() )  && ( command.get ( 8 ).isDouble() || command.get ( 8 ).isInt() ) ) {
                 this->m_reply.addString ( "[ACK] Correct command format" );
                 this->m_rpcPort.reply ( m_reply );
                 m_lock.lock();

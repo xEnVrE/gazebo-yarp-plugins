@@ -3,13 +3,15 @@
 
 #include <iostream>
 #include <string>
+#include "math.h"
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo/transport/transport.hh>
 
 #include <yarp/os/Network.h>
 #include <yarp/os/RpcServer.h>
-#include <yarp/os/Bottle.h>
+//#include <yarp/os/Bottle.h>
+#include <yarp/os/Port.h>
 #include <yarp/sig/Vector.h>
 #include <yarp/os/Thread.h>
 #include <yarp/os/Time.h>
@@ -34,6 +36,7 @@ private:
     yarp::os::RpcServer m_rpcPort;
     yarp::os::Bottle    m_cmd;
     yarp::os::Bottle    m_reply;
+
     /// \brief Mutex to lock reading and writing of _cmd
     boost::mutex        m_lock;
     std::string         m_robotName;
@@ -63,6 +66,8 @@ public:
     /// \brief Robot name that will be used to open rpc port
     std::string          robotName;
     double               timeIni;
+    double               m_frequency;
+    
 //     yarp::os::Bottle     bufferBottle;
     
 
@@ -75,8 +80,11 @@ protected:
 
 private:
     yarp::os::Network       m_yarpNet;
-    RPCServerThread         m_rpcThread;
+    RPCServerThread  m_rpcThread;
     yarp::os::Property      m_iniParams;
+
+    yarp::os::Port      m_forcePort;
+    
 
     physics::ModelPtr       m_myModel;
     /// \brief Link on which the wrench will be applied
