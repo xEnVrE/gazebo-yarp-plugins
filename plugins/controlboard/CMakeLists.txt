@@ -14,6 +14,7 @@ set(controlBoard_source     src/ControlBoard.cc
                             src/ControlBoardDriverInteractionMode.cpp
                             src/ControlBoardDriverDeviceDriver.cpp
                             src/ControlBoardDriverEncoders.cpp
+                            src/ControlBoardDriverMotorEncoders.cpp
                             src/ControlBoardDriverOthers.cpp
                             src/ControlBoardDriverPositionControl.cpp
                             src/ControlBoardDriverTorqueControl.cpp
