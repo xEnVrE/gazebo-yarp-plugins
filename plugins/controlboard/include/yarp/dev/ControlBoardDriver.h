@@ -114,6 +114,29 @@ public:
     // ENCODERS TIMED
     virtual bool getEncodersTimed(double* encs, double* time);
     virtual bool getEncoderTimed(int j, double* encs, double* time);
+		
+// 		//MOTOR ENCODERS
+// 		virtual bool getMotorEncoder(int m, double *v);  //NOT IMPLEMENTED
+// 		virtual bool getMotorEncoders(double *encs);  //NOT IMPLEMENTED
+// 		virtual bool resetMotorEncoder (int m);  //NOT IMPLEMENTED
+// 		virtual bool resetMotorEncoders ();  //NOT IMPLEMENTED
+// 		virtual bool setMotorEncoder (int m, const double val);  //NOT IMPLEMENTED
+// 		virtual bool setMotorEncoders (const double *vals);  //NOT IMPLEMENTED
+// 		
+// 		virtual bool getMotorEncoderSpeed (int m, double *sp);  //NOT IMPLEMENTED
+// 		virtual bool getMotorEncoderSpeeds (double *spds);  //NOT IMPLEMENTED
+// 		
+// 		virtual bool getMotorEncoderAcceleration (int m, double *acc);  //NOT IMPLEMENTED
+// 		virtual bool getMotorEncoderAccelerations (double *accs);  //NOT IMPLEMENTED
+// 		
+// 		virtual bool getNumberOfMotorEncoders (int *num);  //NOT IMPLEMENTED
+// 		
+// 		virtual bool getMotorEncoderCountsPerRevolution (int m, double *cpr);  //NOT IMPLEMENTED
+// 		virtual bool setMotorEncoderCountsPerRevolution (int m, const double cpr);  //NOT IMPLEMENTED
+// 		
+// 		// MOTOR ENCODERS TIMED
+// 		virtual bool getMotorEncoderTimed (int m, double *encs, double *time);
+// 		virtual bool getMotorEncodersTimed (double *encs, double *time);
 
     //POSITION CONTROL
     virtual bool stop(int j); //WORKS
@@ -321,6 +344,7 @@ private:
 
     unsigned int m_robotRefreshPeriod; //ms
     unsigned int m_numberOfJoints; /**< number of joints controlled by the control board */
+    unsigned int m_numberOfElasticJoints; /**< number of elastic joints controlled by the control board */
     std::vector<Range> m_jointLimits;
 
     /**
@@ -329,7 +353,8 @@ private:
      */
     yarp::sig::Vector m_zeroPosition;
 
-    yarp::sig::Vector m_positions; /**< joint positions [Degrees] */
+    yarp::sig::Vector m_positions; /**< joint positions [Degrees]*/
+    yarp::sig::Vector m_motor_positions; /**< motor positions [Degrees] */
     yarp::sig::Vector m_velocities; /**< joint velocities [Degrees/Seconds] */
     yarp::sig::Vector m_torques; /**< joint torques [Netwon Meters] */
 
@@ -343,6 +368,7 @@ private:
                                                  they can be set directly or indirectly
                                                  through the trajectory generator.
                                                  [Degrees] */
+                                            /**< in case of SEA joints, the references are motor positions [or implement both? -> both is a bit tricky] */
 
     yarp::sig::Vector m_referenceTorques; /**< desired reference torques for torque control mode [NetwonMeters] */
     yarp::sig::Vector m_referenceVelocities; /**< desired reference velocities for velocity control mode [Degrees/Seconds] */
@@ -353,7 +379,9 @@ private:
     yarp::sig::Vector m_trajectoryGenerationReferenceAcceleraton; /**< reference acceleration for trajectory generation in position mode. Currently NOT USED in trajectory generation! [Degrees/Seconds^2] */
 
     std::vector<std::string> m_jointNames;
+    std::vector<std::string> m_elasticJointNames;
     std::vector<gazebo::physics::JointPtr> m_jointPointers; /* pointers for each joint, avoiding several calls to getJoint(joint_name) */
+    std::vector<gazebo::physics::JointPtr> m_elasticJointPointers; /* pointers for each joint, avoiding several calls to getJoint(joint_name) */
     gazebo::transport::NodePtr m_gazeboNode;
     gazebo::transport::PublisherPtr m_jointCommandPublisher;
     std::vector<GazeboYarpControlBoardDriver::PID> m_positionPIDs;

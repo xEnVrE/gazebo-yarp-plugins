@@ -41,7 +41,9 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     if (!setJointNames()) return false;
 
     m_numberOfJoints = m_jointNames.size();
+    m_numberOfElasticJoints = m_elasticJointNames.size();
     m_positions.resize(m_numberOfJoints);
+    m_motor_positions.resize(m_numberOfElasticJoints);
     m_zeroPosition.resize(m_numberOfJoints);
     m_referenceVelocities.resize(m_numberOfJoints);
     m_velocities.resize(m_numberOfJoints);
@@ -66,6 +68,7 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     setMinMaxImpedance();
     setPIDs();
     m_positions.zero();
+    m_motor_positions.zero();
     m_zeroPosition.zero();
     m_referenceVelocities.zero();
     m_velocities.zero();
@@ -214,7 +217,18 @@ void GazeboYarpControlBoardDriver::setMinMaxPos()
 
 bool GazeboYarpControlBoardDriver::setJointNames()  //WORKS
 {
-    yarp::os::Bottle joint_names_bottle = m_pluginParameters.findGroup("jointNames");
+		bool advanced = false;
+    yarp::os::Bottle joint_names_bottle;
+		if(m_pluginParameters.findGroup("jointNames").isNull())
+		{
+			joint_names_bottle = m_pluginParameters.findGroup("jointNamesAdvanced");
+			advanced = true;
+			std::cout << "§§§§§§§§§§§ Advanced Joint Names §§§§§§§§§§ \n";
+		} else
+		{
+			joint_names_bottle = m_pluginParameters.findGroup("jointNames");
+			std::cout << "§§§§§§§§§§§ Standard Joint Names §§§§§§§§§§ \n";
+		}
 
     if (joint_names_bottle.isNull()) {
         std::cout << "GazeboYarpControlBoardDriver::setJointNames(): Error cannot find jointNames." << std::endl;
@@ -228,28 +242,69 @@ bool GazeboYarpControlBoardDriver::setJointNames()  //WORKS
 
     const gazebo::physics::Joint_V & gazebo_models_joints = m_robot->GetJoints();
 
-    for (unsigned int i = 0; i < m_jointNames.size(); i++) {
-        bool joint_found = false;
-        std::string controlboard_joint_name(joint_names_bottle.get(i+1).asString().c_str());
+		for (unsigned int i = 0; i < m_jointNames.size(); i++) {
+				bool joint_found = false;
+				bool elastic_joint = false; //used to check if there is an elastic joint in the current joint or not
+				bool elastic_joint_found = false;
+				yarp::os::Bottle* joint_bottle;
+				std::string controlboard_joint_name;
+				std::string controlboard_elastic_joint_name;
+				
+				if(advanced)
+				{
+					joint_bottle = joint_names_bottle.get(i+1).asList();
+					controlboard_joint_name = joint_bottle->get(0).asString().c_str();
+					if (joint_bottle->size() > 1)
+					{
+						elastic_joint = true;
+						controlboard_elastic_joint_name = joint_bottle->get(1).asString().c_str();
+					}
+				} else {
+					controlboard_joint_name = joint_names_bottle.get(i+1).asString().c_str();
+				}
+				
+				for (unsigned int gazebo_joint = 0; gazebo_joint < gazebo_models_joints.size() && !joint_found; gazebo_joint++) {
+						std::string gazebo_joint_name = gazebo_models_joints[gazebo_joint]->GetName();
+						if (GazeboYarpPlugins::hasEnding(gazebo_joint_name,controlboard_joint_name)) {
+								joint_found = true;
+								m_jointNames[i] = gazebo_joint_name;
+								m_jointPointers[i] = this->m_robot->GetJoint(gazebo_joint_name);
+						}
+				}
+				
+				if(elastic_joint)
+				{
+						for (unsigned int gazebo_joint = 0; gazebo_joint < gazebo_models_joints.size() && !elastic_joint_found; gazebo_joint++) {
+						std::string gazebo_joint_name = gazebo_models_joints[gazebo_joint]->GetName();
+						if (GazeboYarpPlugins::hasEnding(gazebo_joint_name,controlboard_elastic_joint_name)) {
+								elastic_joint_found = true;
+								m_elasticJointNames.push_back(gazebo_joint_name); //used push_back because in the actual implementation the number of elastic joints is unknown in the beginning
+								m_elasticJointPointers.push_back(this->m_robot->GetJoint(gazebo_joint_name));
+						}
+					}
+				}
 
-        for (unsigned int gazebo_joint = 0; gazebo_joint < gazebo_models_joints.size() && !joint_found; gazebo_joint++) {
-            std::string gazebo_joint_name = gazebo_models_joints[gazebo_joint]->GetName();
-            if (GazeboYarpPlugins::hasEnding(gazebo_joint_name,controlboard_joint_name)) {
-                joint_found = true;
-                m_jointNames[i] = gazebo_joint_name;
-                m_jointPointers[i] = this->m_robot->GetJoint(gazebo_joint_name);
-            }
-        }
-
-        if (!joint_found) {
-            yError() << "GazeboYarpControlBoardDriver::setJointNames(): cannot find joint " << m_jointNames[i]
-                     << " ( " << i << " of " << nr_of_joints << " ) " << "\n";
-            yError() << "jointNames is " << joint_names_bottle.toString() << "\n";
-            m_jointNames.resize(0);
-            m_jointPointers.resize(0);
-            return false;
-        }
-    }
+				if (!joint_found || (elastic_joint && !elastic_joint_found)) {
+					  if(!joint_found)
+						{
+							yError() << "GazeboYarpControlBoardDriver::setJointNames(): cannot find joint " << m_jointNames[i]
+												<< " ( " << i << " of " << nr_of_joints << " ) " << "\n";
+							yError() << "jointNames is " << joint_names_bottle.toString() << "\n";
+							m_jointNames.resize(0);
+							m_jointPointers.resize(0);
+						}
+						if(elastic_joint && !elastic_joint_found)
+						{
+							yError() << "GazeboYarpControlBoardDriver::setJointNames(): cannot find joint " << m_elasticJointNames[i]
+												<< " ( " << i << " of " << nr_of_joints << " ) " << "\n";
+							yError() << "elasticJointNames is " << joint_bottle->toString() << "\n";
+							m_elasticJointNames.resize(0);
+							m_elasticJointPointers.resize(0);
+						}
+						return false;
+				}
+		}
+    
     return true;
 }
 
