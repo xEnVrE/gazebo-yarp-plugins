@@ -236,12 +236,24 @@ bool GazeboYarpControlBoardDriver::setJointNames()  //WORKS
     }
 
     int nr_of_joints = joint_names_bottle.size()-1;
+		int nr_of_elastic_joint = 0;
 
     m_jointNames.resize(nr_of_joints);
     m_jointPointers.resize(nr_of_joints);
+		
+		if(advanced)// count number of elastic joints
+		{ 
+			for (unsigned int i = 0; i < m_jointNames.size(); i++) {
+				if(joint_names_bottle.get(i+1).asList()->size() > 1)
+					nr_of_elastic_joint++;
+			}
+			m_elasticJointNames.resize(nr_of_elastic_joint);
+			m_elasticJointPointers.resize(nr_of_elastic_joint);
+		}
 
     const gazebo::physics::Joint_V & gazebo_models_joints = m_robot->GetJoints();
 
+		int elastic_joint_idx = 0;
 		for (unsigned int i = 0; i < m_jointNames.size(); i++) {
 				bool joint_found = false;
 				bool elastic_joint = false; //used to check if there is an elastic joint in the current joint or not
@@ -278,8 +290,9 @@ bool GazeboYarpControlBoardDriver::setJointNames()  //WORKS
 						std::string gazebo_joint_name = gazebo_models_joints[gazebo_joint]->GetName();
 						if (GazeboYarpPlugins::hasEnding(gazebo_joint_name,controlboard_elastic_joint_name)) {
 								elastic_joint_found = true;
-								m_elasticJointNames.push_back(gazebo_joint_name); //used push_back because in the actual implementation the number of elastic joints is unknown in the beginning
-								m_elasticJointPointers.push_back(this->m_robot->GetJoint(gazebo_joint_name));
+								m_elasticJointNames[elastic_joint_idx] = gazebo_joint_name;
+								m_elasticJointPointers[elastic_joint_idx] = this->m_robot->GetJoint(gazebo_joint_name);
+								elastic_joint_idx++;
 						}
 					}
 				}
