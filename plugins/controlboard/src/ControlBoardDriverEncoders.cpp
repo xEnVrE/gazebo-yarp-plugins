@@ -11,18 +11,25 @@ using namespace yarp::dev;
 
 bool GazeboYarpControlBoardDriver::getEncoder(int j, double *v) //WORKS
 {
-    if (v && j >= 0 && j < (int)m_numberOfJoints) {
-        *v = m_positions[j]-m_zeroPosition[j];
+		if (v && j >= 0 && j < (int)m_numberOfJoints) {
+				if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
+					*v = m_positions[j]-m_zeroPosition[j] + (m_motor_positions[m_joint_idx[j]]-m_motor_zeroPosition[m_joint_idx[j]]);
+				else
+					*v = m_positions[j]-m_zeroPosition[j];
         return true;
     }
+    
     return false;
 }
 
 bool GazeboYarpControlBoardDriver::getEncoders(double *encs) //WORKS
 {
     if (!encs) return false;
-    for (unsigned int i = 0; i < m_numberOfJoints; ++i) {
-        encs[i] = m_positions[i]-m_zeroPosition[i];  //should we just use memcopy here?
+    for (unsigned int i = 0; i < m_numberOfElasticJoints; ++i) {
+				if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
+					encs[i] = m_positions[i]-m_zeroPosition[i] + (m_motor_positions[m_joint_idx[i]]-m_motor_zeroPosition[m_joint_idx[i]]);
+				else
+					encs[i]  = m_positions[i]-m_zeroPosition[i];
     }
     return true;
 }
@@ -30,8 +37,11 @@ bool GazeboYarpControlBoardDriver::getEncoders(double *encs) //WORKS
 bool GazeboYarpControlBoardDriver::getEncodersTimed(double *encs, double *time)
 {
     double my_time = m_lastTimestamp.getTime();
-    for (unsigned int i = 0; i <m_numberOfJoints; ++i) {
-        encs[i] = m_positions[i]-m_zeroPosition[i];  //should we just use memcopy here?
+    for (unsigned int i = 0; i < m_numberOfElasticJoints; ++i) {
+				if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
+					encs[i] = m_positions[i]-m_zeroPosition[i] + (m_motor_positions[m_joint_idx[i]]-m_motor_zeroPosition[m_joint_idx[i]]);
+				else
+					encs[i]  = m_positions[i]-m_zeroPosition[i];
         time[i] = my_time;
     }
 
@@ -47,8 +57,12 @@ bool GazeboYarpControlBoardDriver::getEncodersTimed(double *encs, double *time)
  */
 bool GazeboYarpControlBoardDriver::getEncoderTimed(int j, double *encs, double *time)
 {
-    if (time && encs && j >= 0 && j < (int)m_numberOfJoints) {
-        *encs = m_positions[j]-m_zeroPosition[j];
+		if (time && encs && j >= 0 && j < (int)m_numberOfJoints) {
+				if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
+					*encs = m_positions[j]-m_zeroPosition[j] + (m_motor_positions[m_joint_idx[j]]-m_motor_zeroPosition[m_joint_idx[j]]);
+				else
+					*encs = m_positions[j]-m_zeroPosition[j];
+				
         *time = m_lastTimestamp.getTime();
         return true;
     }
@@ -61,25 +75,35 @@ bool GazeboYarpControlBoardDriver::getEncoderTimed(int j, double *encs, double *
  */
 bool GazeboYarpControlBoardDriver::resetEncoder(int j) //WORKS
 {
-    if (j >= 0 && j < (int)m_numberOfJoints) {
-        m_zeroPosition[j] = m_positions[j];
+		if (j >= 0 && j < (int)m_numberOfJoints) {
+				if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
+					m_zeroPosition[j] = m_positions[j] + m_motor_positions[m_joint_idx[j]];
+				else
+					m_zeroPosition[j] = m_positions[j];
         return true;
     }
+    
     return false;
 }
 
 bool GazeboYarpControlBoardDriver::resetEncoders() //WORKS
 {
-    for (unsigned int i=0; i<m_numberOfJoints; ++i) {
-        m_zeroPosition[i] = m_positions[i];
+		for (unsigned int j = 0; j < m_numberOfJoints; j++) {
+				if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
+					m_zeroPosition[j] = m_positions[j] + m_motor_positions[m_joint_idx[j]];
+				else
+					m_zeroPosition[j] = m_positions[j];
     }
     return true;
 }
 
 bool GazeboYarpControlBoardDriver::setEncoder(int j, double val) //WORKS
 {
-    if (j >= 0 && j < (int)m_numberOfJoints) {
-        m_zeroPosition[j] = m_positions[j]-val;
+		if (j >= 0 && j < (int)m_numberOfJoints) {
+				if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
+					m_zeroPosition[j] = m_positions[j] + m_motor_positions[m_joint_idx[j]] - val;
+				else
+					m_zeroPosition[j] = m_positions[j] - val;
         return true;
     }
     return false;
@@ -87,8 +111,11 @@ bool GazeboYarpControlBoardDriver::setEncoder(int j, double val) //WORKS
 
 bool GazeboYarpControlBoardDriver::setEncoders(const double *vals) //WORKS
 {
-    for (unsigned int i=0; i<m_numberOfJoints; ++i) {
-        m_zeroPosition[i] = m_positions[i]-vals[i];
+		for (unsigned int j = 0; j < m_numberOfJoints; j++) {
+				if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
+					m_zeroPosition[j] = m_positions[j] + m_motor_positions[m_joint_idx[j]] - vals[j];
+				else
+					m_zeroPosition[j] = m_positions[j] - vals[j];
     }
     return true;
 }
@@ -96,8 +123,11 @@ bool GazeboYarpControlBoardDriver::setEncoders(const double *vals) //WORKS
 
 bool GazeboYarpControlBoardDriver::getEncoderSpeed(int j, double *sp) //NOT TESTED
 {
-    if (sp && j >= 0 && j < (int)m_numberOfJoints) {
-        *sp = m_velocities[j];
+		if (sp && j >= 0 && j < (int)m_numberOfJoints) {
+				if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
+					*sp = m_velocities[j] + m_motor_velocities[m_joint_idx[j]];
+				else
+					*sp = m_velocities[j];
         return true;
     }
     return false;

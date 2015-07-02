@@ -348,7 +348,6 @@ private:
 		
 		// Motor data for elastic jointss
     unsigned int m_numberOfElasticJoints; /**< number of elastic joints controlled by the control board */
-    std::vector<Range> m_motor_jointLimits;
 
     /**
      * The zero position is the position of the GAZEBO joint that will be read as the starting one
@@ -361,7 +360,7 @@ private:
     yarp::sig::Vector m_velocities; /**< joint velocities [Degrees/Seconds] */
     yarp::sig::Vector m_torques; /**< joint torques [Netwon Meters] */
     
-    
+    // Motor
     yarp::sig::Vector m_motor_positions; /**< motor positions [Degrees] */
     yarp::sig::Vector m_motor_velocities; /**< motor velocities [Degrees/Seconds] */
     yarp::sig::Vector m_motor_torques; /**< motor torques [Netwon Meters] */
@@ -376,7 +375,6 @@ private:
                                                  they can be set directly or indirectly
                                                  through the trajectory generator.
                                                  [Degrees] */
-    yarp::sig::Vector m_motor_referencePositions;/**< desired motor reference positions */
 
     yarp::sig::Vector m_referenceTorques; /**< desired reference torques for torque control mode [NetwonMeters] */
     yarp::sig::Vector m_referenceVelocities; /**< desired reference velocities for velocity control mode [Degrees/Seconds] */
@@ -385,12 +383,6 @@ private:
     yarp::sig::Vector m_trajectoryGenerationReferencePosition; /**< reference position for trajectory generation in position mode [Degrees] */
     yarp::sig::Vector m_trajectoryGenerationReferenceSpeed; /**< reference speed for trajectory generation in position mode [Degrees/Seconds]*/
     yarp::sig::Vector m_trajectoryGenerationReferenceAcceleraton; /**< reference acceleration for trajectory generation in position mode. Currently NOT USED in trajectory generation! [Degrees/Seconds^2] */
-
-    //Motor trajectory generator
-    yarp::sig::Vector m_motor_trajectoryGenerationReferencePosition; /**< reference position for trajectory generation in position mode [Degrees] */
-    yarp::sig::Vector m_motor_trajectoryGenerationReferenceSpeed; /**< reference speed for trajectory generation in position mode [Degrees/Seconds]*/
-    yarp::sig::Vector m_motor_trajectoryGenerationReferenceAcceleraton; /**< reference acceleration for trajectory generation in position mode. Currently NOT USED in trajectory generation! [Degrees/Seconds^2] */
-
     
     std::vector<std::string> m_jointNames;
     std::vector<gazebo::physics::JointPtr> m_jointPointers; /* pointers for each joint, avoiding several calls to getJoint(joint_name) */
@@ -400,13 +392,11 @@ private:
     std::vector<GazeboYarpControlBoardDriver::PID> m_velocityPIDs;
     std::vector<GazeboYarpControlBoardDriver::PID> m_impedancePosPDs;
 		
-		
 		//Motor
     std::vector<std::string> m_motorJointNames;
 		std::vector<int> m_motor_idx; // keeps track of which joint is the motor associated with
 		std::vector<int> m_joint_idx; // keeps track of which joint is the motor associated with
 		std::vector<gazebo::physics::JointPtr> m_motorJointPointers; /* pointers for each joint, avoiding several calls to getJoint(joint_name) */
-    std::vector<GazeboYarpControlBoardDriver::PID> m_motor_positionPIDs;
 
     yarp::sig::Vector m_torqueOffsett;
     yarp::sig::Vector m_minStiffness;
@@ -417,11 +407,6 @@ private:
     bool* m_isMotionDone;
     int * m_controlMode;
     int * m_interactionMode;
-		
-		//Motor
-		bool* m_motor_isMotionDone;
-    int * m_motor_controlMode;
-    int * m_motor_interactionMode;
 
     bool started;
     int m_clock;
@@ -451,9 +436,6 @@ private:
 		
 		// Motor
     void computeMotorTrajectory(const int j);
-    bool sendMotorPositionsToGazebo(yarp::sig::Vector& refs);
-    bool sendMotorPositionToGazebo(int j,double ref);
-    void prepareMotorJointMsg(gazebo::msgs::JointCmd& j_cmd, const int joint_index, const double ref);  //WORKS
 
 };
 
