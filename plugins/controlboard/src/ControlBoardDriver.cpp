@@ -131,11 +131,17 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
 
         for (unsigned int i = 0; i < m_numberOfJoints; ++i) {
 #if GAZEBO_MAJOR_VERSION >= 4
-            m_jointPointers[i]->SetPosition(0,initial_config[i]);
+						if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
+							m_motorJointPointers[m_joint_idx[i]]->SetPosition(0,initial_config[i]);
+						else
+							m_jointPointers[i]->SetPosition(0,initial_config[i]);
 #else
             gazebo::math::Angle a;
             a.SetFromRadian(initial_config[i]);
-            m_jointPointers[i]->SetAngle(0,a);
+						if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
+							m_motorJointPointers[m_joint_idx[i]]->SetAngle(0,a);
+						else
+							m_jointPointers[i]->SetAngle(0,a);
 #endif
         }
     }
@@ -165,7 +171,10 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
     if (!started) {//This is a simple way to start with the robot in standing position
         started = true;
         for (unsigned int j = 0; j < m_numberOfJoints; ++j)
-            sendPositionToGazebo (j, m_positions[j]);
+						if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
+							sendPositionToGazebo (j, m_motor_positions[m_joint_idx[j]]);
+						else
+							sendPositionToGazebo (j, m_positions[j]);
     }
 
 		// Sensing motor position & torque, only if there are motor side joints
@@ -472,9 +481,6 @@ void GazeboYarpControlBoardDriver::setPIDs()
     setPIDsForGroup("GAZEBO_PIDS", m_positionPIDs, PIDFeedbackTermAllTerms);
     setPIDsForGroup("GAZEBO_VELOCITY_PIDS", m_velocityPIDs, PIDFeedbackTerm(PIDFeedbackTermProportionalTerm | PIDFeedbackTermIntegrativeTerm));
     setPIDsForGroup("GAZEBO_IMPEDANCE_POSITION_PIDS", m_impedancePosPDs, PIDFeedbackTerm(PIDFeedbackTermProportionalTerm | PIDFeedbackTermDerivativeTerm));
-	
-// 		if(m_numberOfElasticJoints > 0)
-// 			setPIDsForGroup("GAZEBO_MOTOR_PIDS", m_motor_positionPIDs, PIDFeedbackTermAllTerms);
 }
 
 bool GazeboYarpControlBoardDriver::sendPositionsToGazebo(Vector &refs)

@@ -47,13 +47,6 @@ bool GazeboYarpControlBoardDriver::getMotorEncodersTimed(double *encs, double *t
     return true;
 }
 
-/**
- * Read the instantaneous acceleration of the specified axis
- * @param j axis index
- * @param encs pointer to double
- * @param time corresponding timestamp (pointer to)
- * @return true if all goes well, false if anything bad happens.
- */
 bool GazeboYarpControlBoardDriver::getMotorEncoderTimed(int j, double *encs, double *time)  //NOT TESTED
 {
 		if (time && encs && j >= 0 && j < (int)m_numberOfJoints) {
