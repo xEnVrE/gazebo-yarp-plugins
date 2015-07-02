@@ -394,7 +394,7 @@ private:
 		
 		//Motor
     std::vector<std::string> m_motorJointNames;
-		std::vector<int> m_motor_idx; // keeps track of which joint is the motor associated with
+		std::vector<int> m_motor_idx; // keeps track of which joint is the motor associated with, need to implement a smarter way
 		std::vector<int> m_joint_idx; // keeps track of which joint is the motor associated with
 		std::vector<gazebo::physics::JointPtr> m_motorJointPointers; /* pointers for each joint, avoiding several calls to getJoint(joint_name) */
 

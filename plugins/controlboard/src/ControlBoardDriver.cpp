@@ -168,15 +168,8 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
             sendPositionToGazebo (j, m_positions[j]);
     }
 
-    // Sensing position & torque
-    for (unsigned int jnt_cnt = 0; jnt_cnt < m_jointPointers.size(); jnt_cnt++) {
-//TODO: consider multi-dof joint ?
-        m_positions[jnt_cnt] = m_jointPointers[jnt_cnt]->GetAngle (0).Degree();
-        m_velocities[jnt_cnt] = GazeboYarpPlugins::convertRadiansToDegrees(m_jointPointers[jnt_cnt]->GetVelocity(0));
-        m_torques[jnt_cnt] = m_jointPointers[jnt_cnt]->GetForce(0u);
-    }
-    
 		// Sensing motor position & torque, only if there are motor side joints
+		// These values will be added to the joint side
     if(m_numberOfElasticJoints > 0)
 		{
 			for (unsigned int motor_jnt_cnt = 0; motor_jnt_cnt < m_motorJointPointers.size(); motor_jnt_cnt++) {
@@ -185,7 +178,25 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
 					m_motor_velocities[motor_jnt_cnt] = GazeboYarpPlugins::convertRadiansToDegrees(m_motorJointPointers[motor_jnt_cnt]->GetVelocity(0));
 					m_motor_torques[motor_jnt_cnt] = m_motorJointPointers[motor_jnt_cnt]->GetForce(0u);
 			}
-			}
+		}
+    
+    // Sensing position & torque
+    for (unsigned int jnt_cnt = 0; jnt_cnt < m_jointPointers.size(); jnt_cnt++) {
+//TODO: consider multi-dof joint ?
+				if(m_numberOfElasticJoints > 0 && m_joint_idx[jnt_cnt] != -1)
+				{
+					m_positions[jnt_cnt] = m_motor_positions[m_joint_idx[jnt_cnt]] + m_jointPointers[jnt_cnt]->GetAngle (0).Degree();
+					m_velocities[jnt_cnt] = m_motor_velocities[m_joint_idx[jnt_cnt]] + GazeboYarpPlugins::convertRadiansToDegrees(m_jointPointers[jnt_cnt]->GetVelocity(0));
+					m_torques[jnt_cnt] = m_motor_torques[m_joint_idx[jnt_cnt]] + m_jointPointers[jnt_cnt]->GetForce(0u);
+				}
+				else
+				{
+					m_positions[jnt_cnt] = m_jointPointers[jnt_cnt]->GetAngle (0).Degree();
+					m_velocities[jnt_cnt] = GazeboYarpPlugins::convertRadiansToDegrees(m_jointPointers[jnt_cnt]->GetVelocity(0));
+					m_torques[jnt_cnt] = m_jointPointers[jnt_cnt]->GetForce(0u);
+				}
+    }
+
     // Updating timestamp
     m_lastTimestamp.update(_info.simTime.Double());
 
