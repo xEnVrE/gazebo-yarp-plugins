@@ -1,8 +1,8 @@
 /*
- * Copyright (C) 2007-2013 Istituto Italiano di Tecnologia ADVR & iCub Facility
- * Authors: Enrico Mingo, Alessio Rocchi, Mirko Ferrati, Silvio Traversaro and Alessandro Settimi
- * CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
- */
+* Copyright (C) 2007-2013 Istituto Italiano di Tecnologia ADVR & iCub Facility
+* Authors: Enrico Mingo, Alessio Rocchi, Mirko Ferrati, Silvio Traversaro and Alessandro Settimi
+* CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
+*/
 
 
 #include "ControlBoardDriver.h"
@@ -61,13 +61,13 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     m_maxStiffness.resize(m_numberOfJoints, 1000.0);
     m_minDamping.resize(m_numberOfJoints, 0.0);
     m_maxDamping.resize(m_numberOfJoints, 100.0);
-		
-		//motor
+    
+    //motor
     m_numberOfElasticJoints = m_motorJointNames.size();
     m_motor_zeroPosition.resize(m_numberOfElasticJoints);
     m_motor_positions.resize(m_numberOfElasticJoints);
-		m_motor_velocities.resize(m_numberOfElasticJoints);
-		m_motor_torques.resize(m_numberOfElasticJoints);
+    m_motor_velocities.resize(m_numberOfElasticJoints);
+    m_motor_torques.resize(m_numberOfElasticJoints);
 
     setMinMaxPos();
     setMinMaxImpedance();
@@ -92,18 +92,18 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
         m_controlMode[j] = VOCAB_CM_POSITION;
     for (unsigned int j = 0; j < m_numberOfJoints; ++j)
         m_interactionMode[j] = VOCAB_IM_STIFF;
-		
-		//Motor
+    
+    //Motor
     m_motor_positions.zero();
     m_motor_velocities.zero();
     m_motor_torques.zero();
-		m_motor_zeroPosition.zero();
+    m_motor_zeroPosition.zero();
 
     std::cout << "gazebo_init set pid done!" << std::endl;
 
     this->m_updateConnection
         = gazebo::event::Events::ConnectWorldUpdateBegin(boost::bind(&GazeboYarpControlBoardDriver::onUpdate,
-                                                                     this, _1));
+                                                                    this, _1));
 
     m_gazeboNode = gazebo::transport::NodePtr(new gazebo::transport::Node);
     m_gazeboNode->Init(this->m_robot->GetWorld()->GetName());
@@ -131,17 +131,17 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
 
         for (unsigned int i = 0; i < m_numberOfJoints; ++i) {
 #if GAZEBO_MAJOR_VERSION >= 4
-						if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
-							m_motorJointPointers[m_joint_idx[i]]->SetPosition(0,initial_config[i]);
-						else
-							m_jointPointers[i]->SetPosition(0,initial_config[i]);
+            if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
+              m_motorJointPointers[m_joint_idx[i]]->SetPosition(0,initial_config[i]);
+            else
+              m_jointPointers[i]->SetPosition(0,initial_config[i]);
 #else
             gazebo::math::Angle a;
             a.SetFromRadian(initial_config[i]);
-						if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
-							m_motorJointPointers[m_joint_idx[i]]->SetAngle(0,a);
-						else
-							m_jointPointers[i]->SetAngle(0,a);
+            if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
+              m_motorJointPointers[m_joint_idx[i]]->SetAngle(0,a);
+            else
+              m_jointPointers[i]->SetAngle(0,a);
 #endif
         }
     }
@@ -171,39 +171,39 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
     if (!started) {//This is a simple way to start with the robot in standing position
         started = true;
         for (unsigned int j = 0; j < m_numberOfJoints; ++j)
-						if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
-							sendPositionToGazebo (j, m_motor_positions[m_joint_idx[j]]);
-						else
-							sendPositionToGazebo (j, m_positions[j]);
+            if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
+              sendPositionToGazebo (j, m_motor_positions[m_joint_idx[j]]);
+            else
+              sendPositionToGazebo (j, m_positions[j]);
     }
 
-		// Sensing motor position & torque, only if there are motor side joints
-		// These values will be added to the joint side
+    // Sensing motor position & torque, only if there are motor side joints
+    // These values will be added to the joint side
     if(m_numberOfElasticJoints > 0)
-		{
-			for (unsigned int motor_jnt_cnt = 0; motor_jnt_cnt < m_motorJointPointers.size(); motor_jnt_cnt++) {
-	//TODO: consider multi-dof joint ?
-					m_motor_positions[motor_jnt_cnt] = m_motorJointPointers[motor_jnt_cnt]->GetAngle (0).Degree();
-					m_motor_velocities[motor_jnt_cnt] = GazeboYarpPlugins::convertRadiansToDegrees(m_motorJointPointers[motor_jnt_cnt]->GetVelocity(0));
-					m_motor_torques[motor_jnt_cnt] = m_motorJointPointers[motor_jnt_cnt]->GetForce(0u);
-			}
-		}
+    {
+      for (unsigned int motor_jnt_cnt = 0; motor_jnt_cnt < m_motorJointPointers.size(); motor_jnt_cnt++) {
+  //TODO: consider multi-dof joint ?
+          m_motor_positions[motor_jnt_cnt] = m_motorJointPointers[motor_jnt_cnt]->GetAngle (0).Degree();
+          m_motor_velocities[motor_jnt_cnt] = GazeboYarpPlugins::convertRadiansToDegrees(m_motorJointPointers[motor_jnt_cnt]->GetVelocity(0));
+          m_motor_torques[motor_jnt_cnt] = m_motorJointPointers[motor_jnt_cnt]->GetForce(0u);
+      }
+    }
     
     // Sensing position & torque
     for (unsigned int jnt_cnt = 0; jnt_cnt < m_jointPointers.size(); jnt_cnt++) {
 //TODO: consider multi-dof joint ?
-				if(m_numberOfElasticJoints > 0 && m_joint_idx[jnt_cnt] != -1)
-				{
-					m_positions[jnt_cnt] = m_motor_positions[m_joint_idx[jnt_cnt]] + m_jointPointers[jnt_cnt]->GetAngle (0).Degree();
-					m_velocities[jnt_cnt] = m_motor_velocities[m_joint_idx[jnt_cnt]] + GazeboYarpPlugins::convertRadiansToDegrees(m_jointPointers[jnt_cnt]->GetVelocity(0));
-					m_torques[jnt_cnt] = m_motor_torques[m_joint_idx[jnt_cnt]] + m_jointPointers[jnt_cnt]->GetForce(0u);
-				}
-				else
-				{
-					m_positions[jnt_cnt] = m_jointPointers[jnt_cnt]->GetAngle (0).Degree();
-					m_velocities[jnt_cnt] = GazeboYarpPlugins::convertRadiansToDegrees(m_jointPointers[jnt_cnt]->GetVelocity(0));
-					m_torques[jnt_cnt] = m_jointPointers[jnt_cnt]->GetForce(0u);
-				}
+        if(m_numberOfElasticJoints > 0 && m_joint_idx[jnt_cnt] != -1)
+        {
+          m_positions[jnt_cnt] = m_motor_positions[m_joint_idx[jnt_cnt]] + m_jointPointers[jnt_cnt]->GetAngle (0).Degree();
+          m_velocities[jnt_cnt] = m_motor_velocities[m_joint_idx[jnt_cnt]] + GazeboYarpPlugins::convertRadiansToDegrees(m_jointPointers[jnt_cnt]->GetVelocity(0));
+          m_torques[jnt_cnt] = m_motor_torques[m_joint_idx[jnt_cnt]] + m_jointPointers[jnt_cnt]->GetForce(0u);
+        }
+        else
+        {
+          m_positions[jnt_cnt] = m_jointPointers[jnt_cnt]->GetAngle (0).Degree();
+          m_velocities[jnt_cnt] = GazeboYarpPlugins::convertRadiansToDegrees(m_jointPointers[jnt_cnt]->GetVelocity(0));
+          m_torques[jnt_cnt] = m_jointPointers[jnt_cnt]->GetForce(0u);
+        }
     }
 
     // Updating timestamp
@@ -250,33 +250,33 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
 void GazeboYarpControlBoardDriver::setMinMaxPos()
 {
     for(unsigned int i = 0; i < m_numberOfJoints; ++i) {
-				if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
-				{
-					m_jointLimits[i].max = m_motorJointPointers[m_joint_idx[i]]->GetUpperLimit(0).Degree();
-					m_jointLimits[i].min = m_motorJointPointers[m_joint_idx[i]]->GetLowerLimit(0).Degree();
-				}
-				else
-				{
-					m_jointLimits[i].max = m_jointPointers[i]->GetUpperLimit(0).Degree();
-					m_jointLimits[i].min = m_jointPointers[i]->GetLowerLimit(0).Degree();
-				}
+        if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
+        {
+          m_jointLimits[i].max = m_motorJointPointers[m_joint_idx[i]]->GetUpperLimit(0).Degree();
+          m_jointLimits[i].min = m_motorJointPointers[m_joint_idx[i]]->GetLowerLimit(0).Degree();
+        }
+        else
+        {
+          m_jointLimits[i].max = m_jointPointers[i]->GetUpperLimit(0).Degree();
+          m_jointLimits[i].min = m_jointPointers[i]->GetLowerLimit(0).Degree();
+        }
     }
 }
 
 bool GazeboYarpControlBoardDriver::setJointNames()  //WORKS
 {
-		bool advanced = false;
+    bool advanced = false;
     yarp::os::Bottle joint_names_bottle;
-		if(m_pluginParameters.findGroup("jointNames").isNull())
-		{
-			joint_names_bottle = m_pluginParameters.findGroup("jointNamesElastic");
-			advanced = true;
-			std::cout << "§§§§§§§§§§§ Elastic Joint Names §§§§§§§§§§ \n";
-		} else
-		{
-			joint_names_bottle = m_pluginParameters.findGroup("jointNames");
-			std::cout << "§§§§§§§§§§§ Standard Joint Names §§§§§§§§§§ \n";
-		}
+    if(m_pluginParameters.findGroup("jointNames").isNull())
+    {
+      joint_names_bottle = m_pluginParameters.findGroup("jointNamesElastic");
+      advanced = true;
+      std::cout << "§§§§§§§§§§§ You are using Elastic Joint Names §§§§§§§§§§ \n";
+    } else
+    {
+      joint_names_bottle = m_pluginParameters.findGroup("jointNames");
+      std::cout << "§§§§§§§§§§§ You are using Standard Joint Names §§§§§§§§§§ \n";
+    }
 
     if (joint_names_bottle.isNull()) {
         std::cout << "GazeboYarpControlBoardDriver::setJointNames(): Error cannot find jointNames." << std::endl;
@@ -284,99 +284,99 @@ bool GazeboYarpControlBoardDriver::setJointNames()  //WORKS
     }
 
     int nr_of_joints = joint_names_bottle.size()-1;
-		int nr_of_elastic_joints = 0;
+    int nr_of_elastic_joints = 0;
 
     m_jointNames.resize(nr_of_joints);
     m_jointPointers.resize(nr_of_joints);
-		m_joint_idx.resize(nr_of_joints, -1);
-		
-		if(advanced)// count number of elastic joints
-		{ 
-			for (unsigned int i = 0; i < m_jointNames.size(); i++) {
-				if(joint_names_bottle.get(i+1).asList()->size() > 1)
-					nr_of_elastic_joints++;
-			}
-		}
-		
-		m_motor_idx.resize(nr_of_elastic_joints, -1);
-		m_motorJointNames.resize(nr_of_elastic_joints);
-		m_motorJointPointers.resize(nr_of_elastic_joints);
+    m_joint_idx.resize(nr_of_joints, -1);
+    
+    if(advanced)// count number of elastic joints
+    { 
+      for (unsigned int i = 0; i < m_jointNames.size(); i++) {
+        if(joint_names_bottle.get(i+1).asList()->size() > 1)
+          nr_of_elastic_joints++;
+      }
+    }
+    
+    m_motor_idx.resize(nr_of_elastic_joints, -1);
+    m_motorJointNames.resize(nr_of_elastic_joints);
+    m_motorJointPointers.resize(nr_of_elastic_joints);
 
     const gazebo::physics::Joint_V & gazebo_models_joints = m_robot->GetJoints();
 
-		int elastic_joint_idx = 0;
-		for (unsigned int i = 0; i < m_jointNames.size(); i++) {
-				bool joint_found = false;
-				bool elastic_joint = false; //used to check if there is an elastic joint in the current joint or not
-				bool elastic_joint_found = false;
-				yarp::os::Bottle* joint_bottle;
-				std::string controlboard_joint_name;
-				std::string controlboard_elastic_joint_name;
-				
-				if(advanced)
-				{
-					joint_bottle = joint_names_bottle.get(i+1).asList();
-					controlboard_joint_name = joint_bottle->get(0).asString().c_str();
-					if (joint_bottle->size() > 1)
-					{
-						elastic_joint = true;
-						controlboard_elastic_joint_name = joint_bottle->get(1).asString().c_str();
-					}
-				} else {
-					controlboard_joint_name = joint_names_bottle.get(i+1).asString().c_str();
-				}
-				
-				for (unsigned int gazebo_joint = 0; gazebo_joint < gazebo_models_joints.size() && !joint_found; gazebo_joint++) {
-						std::string gazebo_joint_name = gazebo_models_joints[gazebo_joint]->GetName();
-						if (GazeboYarpPlugins::hasEnding(gazebo_joint_name,controlboard_joint_name)) {
-								joint_found = true;
-								m_jointNames[i] = gazebo_joint_name;
-								m_jointPointers[i] = this->m_robot->GetJoint(gazebo_joint_name);
-						}
-				}
-				
-				if(elastic_joint)
-				{
-						for (unsigned int gazebo_joint = 0; gazebo_joint < gazebo_models_joints.size() && !elastic_joint_found; gazebo_joint++) {
-						std::string gazebo_joint_name = gazebo_models_joints[gazebo_joint]->GetName();
-						if (GazeboYarpPlugins::hasEnding(gazebo_joint_name,controlboard_elastic_joint_name)) {
-								elastic_joint_found = true;
-								m_motorJointNames[elastic_joint_idx] = gazebo_joint_name;
-								m_motorJointPointers[elastic_joint_idx] = this->m_robot->GetJoint(gazebo_joint_name);
-								m_motor_idx[elastic_joint_idx] = i;
-								m_joint_idx[i] = elastic_joint_idx;
-								elastic_joint_idx++;
-						}
-					}
-				}
+    int elastic_joint_idx = 0;
+    for (unsigned int i = 0; i < m_jointNames.size(); i++) {
+        bool joint_found = false;
+        bool elastic_joint = false; //used to check if there is an elastic joint in the current joint or not
+        bool elastic_joint_found = false;
+        yarp::os::Bottle* joint_bottle;
+        std::string controlboard_joint_name;
+        std::string controlboard_elastic_joint_name;
+        
+        if(advanced)
+        {
+          joint_bottle = joint_names_bottle.get(i+1).asList();
+          controlboard_joint_name = joint_bottle->get(0).asString().c_str();
+          if (joint_bottle->size() > 1)
+          {
+            elastic_joint = true;
+            controlboard_elastic_joint_name = joint_bottle->get(1).asString().c_str();
+          }
+        } else {
+          controlboard_joint_name = joint_names_bottle.get(i+1).asString().c_str();
+        }
+        
+        for (unsigned int gazebo_joint = 0; gazebo_joint < gazebo_models_joints.size() && !joint_found; gazebo_joint++) {
+            std::string gazebo_joint_name = gazebo_models_joints[gazebo_joint]->GetName();
+            if (GazeboYarpPlugins::hasEnding(gazebo_joint_name,controlboard_joint_name)) {
+                joint_found = true;
+                m_jointNames[i] = gazebo_joint_name;
+                m_jointPointers[i] = this->m_robot->GetJoint(gazebo_joint_name);
+            }
+        }
+        
+        if(elastic_joint)
+        {
+            for (unsigned int gazebo_joint = 0; gazebo_joint < gazebo_models_joints.size() && !elastic_joint_found; gazebo_joint++) {
+            std::string gazebo_joint_name = gazebo_models_joints[gazebo_joint]->GetName();
+            if (GazeboYarpPlugins::hasEnding(gazebo_joint_name,controlboard_elastic_joint_name)) {
+                elastic_joint_found = true;
+                m_motorJointNames[elastic_joint_idx] = gazebo_joint_name;
+                m_motorJointPointers[elastic_joint_idx] = this->m_robot->GetJoint(gazebo_joint_name);
+                m_motor_idx[elastic_joint_idx] = i;
+                m_joint_idx[i] = elastic_joint_idx;
+                elastic_joint_idx++;
+            }
+          }
+        }
 
-				if (!joint_found || (elastic_joint && !elastic_joint_found)) {
-					  if(!joint_found)
-						{
-							yError() << "GazeboYarpControlBoardDriver::setJointNames(): cannot find joint " << m_jointNames[i]
-												<< " ( " << i << " of " << nr_of_joints << " ) " << "\n";
-							yError() << "jointNames is " << joint_names_bottle.toString() << "\n";
-							m_jointNames.resize(0);
-							m_jointPointers.resize(0);
-						}
-						if(elastic_joint && !elastic_joint_found)
-						{
-							yError() << "GazeboYarpControlBoardDriver::setJointNames(): cannot find joint " << m_motorJointNames[i]
-												<< " ( " << i << " of " << nr_of_joints << " ) " << "\n";
-							yError() << "elasticJointNames is " << joint_bottle->toString() << "\n";
-							m_motorJointNames.resize(0);
-							m_motorJointPointers.resize(0);
-						}
-						return false;
-				}
-		}
+        if (!joint_found || (elastic_joint && !elastic_joint_found)) {
+            if(!joint_found)
+            {
+              yError() << "GazeboYarpControlBoardDriver::setJointNames(): cannot find joint " << m_jointNames[i]
+                        << " ( " << i << " of " << nr_of_joints << " ) " << "\n";
+              yError() << "jointNames is " << joint_names_bottle.toString() << "\n";
+              m_jointNames.resize(0);
+              m_jointPointers.resize(0);
+            }
+            if(elastic_joint && !elastic_joint_found)
+            {
+              yError() << "GazeboYarpControlBoardDriver::setJointNames(): cannot find joint " << m_motorJointNames[i]
+                        << " ( " << i << " of " << nr_of_joints << " ) " << "\n";
+              yError() << "elasticJointNames is " << joint_bottle->toString() << "\n";
+              m_motorJointNames.resize(0);
+              m_motorJointPointers.resize(0);
+            }
+            return false;
+        }
+    }
     
     return true;
 }
 
 void GazeboYarpControlBoardDriver::setPIDsForGroup(std::string pidGroupName,
-                                                   std::vector<GazeboYarpControlBoardDriver::PID>& pids,
-                                                   enum PIDFeedbackTerm pidTerms)
+                                                  std::vector<GazeboYarpControlBoardDriver::PID>& pids,
+                                                  enum PIDFeedbackTerm pidTerms)
 {
     yarp::os::Property prop;
     if (m_pluginParameters.check(pidGroupName.c_str())) {
@@ -504,10 +504,10 @@ void GazeboYarpControlBoardDriver::prepareJointMsg(gazebo::msgs::JointCmd& j_cmd
 {
     GazeboYarpControlBoardDriver::PID positionPID = m_positionPIDs[joint_index];
 
-		if(m_numberOfElasticJoints > 0 && m_joint_idx[joint_index] != -1)
-			j_cmd.set_name(m_motorJointPointers[m_joint_idx[joint_index]]->GetScopedName());
-		else
-			j_cmd.set_name(m_jointPointers[joint_index]->GetScopedName());
+    if(m_numberOfElasticJoints > 0 && m_joint_idx[joint_index] != -1)
+      j_cmd.set_name(m_motorJointPointers[m_joint_idx[joint_index]]->GetScopedName());
+    else
+      j_cmd.set_name(m_jointPointers[joint_index]->GetScopedName());
     j_cmd.mutable_position()->set_target(GazeboYarpPlugins::convertDegreesToRadians(ref));
     j_cmd.mutable_position()->set_p_gain(positionPID.p);
     j_cmd.mutable_position()->set_i_gain(positionPID.i);
@@ -526,16 +526,16 @@ bool GazeboYarpControlBoardDriver::sendVelocityToGazebo(int j,double ref) //NOT 
 {
     /* SetVelocity method */
     /*gazebo::physics::JointPtr joint =  this->m_robot->GetJoint(m_jointNames[j]);
-     joint->SetMaxForce(0, joint->GetEffortLimit(0)*1.1); //<-- MAGIC NUMBER!!!!
-     //      std::cout<<"MaxForce:" <<joint->GetMaxForce(0)<<std::endl;
-     joint->SetVelocity(0,toRad(ref));
-     */
+    joint->SetMaxForce(0, joint->GetEffortLimit(0)*1.1); //<-- MAGIC NUMBER!!!!
+    //      std::cout<<"MaxForce:" <<joint->GetMaxForce(0)<<std::endl;
+    joint->SetVelocity(0,toRad(ref));
+    */
     /* JointController method. If you pick this control method for control
-     *      of joint velocities, you should also take care of the switching logic
-     *      in setVelocityMode, setTorqueMode and setPositionMode:
-     *      that is, the SetMarxForce(0,0) and SetVelocity(0,0) are no longer
-     *      needed, but the JointController::AddJoint() method needs to be called
-     *      when you switch to velocity mode, to make sure the PIDs get reset */
+    *      of joint velocities, you should also take care of the switching logic
+    *      in setVelocityMode, setTorqueMode and setPositionMode:
+    *      that is, the SetMarxForce(0,0) and SetVelocity(0,0) are no longer
+    *      needed, but the JointController::AddJoint() method needs to be called
+    *      when you switch to velocity mode, to make sure the PIDs get reset */
     gazebo::msgs::JointCmd j_cmd;
     prepareJointVelocityMsg(j_cmd,j,ref);
     m_jointCommandPublisher->WaitForConnection();
@@ -547,11 +547,11 @@ bool GazeboYarpControlBoardDriver::sendVelocityToGazebo(int j,double ref) //NOT 
 void GazeboYarpControlBoardDriver::prepareJointVelocityMsg(gazebo::msgs::JointCmd& j_cmd, const int j, const double ref) //NOT TESTED
 {
     GazeboYarpControlBoardDriver::PID velocityPID = m_velocityPIDs[j];
-		
-		if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
-			j_cmd.set_name(m_motorJointPointers[m_joint_idx[j]]->GetScopedName());
-		else
-			j_cmd.set_name(m_jointPointers[j]->GetScopedName());
+    
+    if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
+      j_cmd.set_name(m_motorJointPointers[m_joint_idx[j]]->GetScopedName());
+    else
+      j_cmd.set_name(m_jointPointers[j]->GetScopedName());
 //    j_cmd.mutable_position()->set_p_gain(0.0);
 //    j_cmd.mutable_position()->set_i_gain(0.0);
 //    j_cmd.mutable_position()->set_d_gain(0.0);
@@ -588,10 +588,10 @@ bool GazeboYarpControlBoardDriver::sendTorqueToGazebo(const int j,const double r
 
 void GazeboYarpControlBoardDriver::prepareJointTorqueMsg(gazebo::msgs::JointCmd& j_cmd, const int j, const double ref) //NOT TESTED
 {
-		if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
-			j_cmd.set_name(m_motorJointPointers[m_joint_idx[j]]->GetScopedName());
-		else
-			j_cmd.set_name(m_jointPointers[j]->GetScopedName());
+    if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
+      j_cmd.set_name(m_motorJointPointers[m_joint_idx[j]]->GetScopedName());
+    else
+      j_cmd.set_name(m_jointPointers[j]->GetScopedName());
 //    j_cmd.mutable_position()->set_p_gain(0.0);
 //    j_cmd.mutable_position()->set_i_gain(0.0);
 //    j_cmd.mutable_position()->set_d_gain(0.0);
@@ -605,9 +605,9 @@ void GazeboYarpControlBoardDriver::sendImpPositionToGazebo ( const int j, const 
 {
     if(j >= 0 && j < m_numberOfJoints) {
         /*
-         Here joint positions and speeds are in [deg] and [deg/sec].
-         Therefore also stiffness and damping has to be [Nm/deg] and [Nm*sec/deg].
-         */
+        Here joint positions and speeds are in [deg] and [deg/sec].
+        Therefore also stiffness and damping has to be [Nm/deg] and [Nm*sec/deg].
+        */
         //std::cout<<"m_velocities"<<j<<" : "<<m_velocities[j]<<std::endl;
         double q = m_positions[j] - m_zeroPosition[j];
         double t_ref = -m_impedancePosPDs[j].p * (q - des) - m_impedancePosPDs[j].d * m_velocities[j] + m_torqueOffsett[j];

@@ -67,6 +67,7 @@ class yarp::dev::GazeboYarpControlBoardDriver:
     public IVelocityControl2,
     public IAmplifierControl,
     public IEncodersTimed,
+		public IMotorEncoders,
     public IControlCalibration2,
     public IControlLimits2,
     public IInteractionMode,
@@ -114,29 +115,28 @@ public:
     // ENCODERS TIMED
     virtual bool getEncodersTimed(double* encs, double* time);
     virtual bool getEncoderTimed(int j, double* encs, double* time);
-		
-		//MOTOR ENCODERS
-		virtual bool getMotorEncoder(int m, double *v);  //NOT TESTED
-		virtual bool getMotorEncoders(double *encs);  //NOT TESTED
-		virtual bool resetMotorEncoder (int m);  //NOT TESTED
-		virtual bool resetMotorEncoders ();  //NOT TESTED
-		virtual bool setMotorEncoder (int m, const double val);  //NOT TESTED
-		virtual bool setMotorEncoders (const double *vals);  //NOT TESTED
-		
-		virtual bool getMotorEncoderSpeed (int m, double *sp);  //NOT TESTED
-		virtual bool getMotorEncoderSpeeds (double *spds);  //NOT TESTED
-		
-		virtual bool getMotorEncoderAcceleration (int m, double *acc);  //NOT IMPLEMENTED
-		virtual bool getMotorEncoderAccelerations (double *accs);  //NOT IMPLEMENTED
-		
-// 		virtual bool getNumberOfMotorEncoders (int *num);  //NOT IMPLEMENTED
-// 		
-// 		virtual bool getMotorEncoderCountsPerRevolution (int m, double *cpr);  //NOT IMPLEMENTED
-// 		virtual bool setMotorEncoderCountsPerRevolution (int m, const double cpr);  //NOT IMPLEMENTED
-		
-		// MOTOR ENCODERS TIMED
-		virtual bool getMotorEncoderTimed (int m, double *encs, double *time); //NOT TESTED
-		virtual bool getMotorEncodersTimed (double *encs, double *time); //NOT TESTED
+
+    //MOTOR ENCODERS
+    virtual bool getMotorEncoder(int m, double *v);  //NOT TESTED
+    virtual bool getMotorEncoders(double *encs);  //NOT TESTED
+    virtual bool resetMotorEncoder (int m);  //NOT TESTED
+    virtual bool resetMotorEncoders ();  //NOT TESTED
+    virtual bool setMotorEncoder (int m, const double val);  //NOT TESTED
+    virtual bool setMotorEncoders (const double *vals);  //NOT TESTED
+
+    virtual bool getMotorEncoderSpeed (int m, double *sp);  //NOT TESTED
+    virtual bool getMotorEncoderSpeeds (double *spds);  //NOT TESTED
+
+    virtual bool getMotorEncoderAcceleration (int m, double *acc);  //NOT IMPLEMENTED
+    virtual bool getMotorEncoderAccelerations (double *accs);  //NOT IMPLEMENTED
+
+    virtual bool getNumberOfMotorEncoders (int *num);  //NOT TESTED
+
+    virtual bool getMotorEncoderCountsPerRevolution (int m, double *cpr);  //NOT IMPLEMENTED
+    virtual bool setMotorEncoderCountsPerRevolution (int m, const double cpr);  //NOT IMPLEMENTED
+
+    virtual bool getMotorEncoderTimed (int m, double *encs, double *time); //WORKS
+    virtual bool getMotorEncodersTimed (double *encs, double *time); //WORKS
 
     //POSITION CONTROL
     virtual bool stop(int j); //WORKS
@@ -345,8 +345,8 @@ private:
     unsigned int m_robotRefreshPeriod; //ms
     unsigned int m_numberOfJoints; /**< number of joints controlled by the control board */
     std::vector<Range> m_jointLimits;
-		
-		// Motor data for elastic jointss
+
+    // Motor data for elastic jointss
     unsigned int m_numberOfElasticJoints; /**< number of elastic joints controlled by the control board */
 
     /**
@@ -391,12 +391,12 @@ private:
     std::vector<GazeboYarpControlBoardDriver::PID> m_positionPIDs;
     std::vector<GazeboYarpControlBoardDriver::PID> m_velocityPIDs;
     std::vector<GazeboYarpControlBoardDriver::PID> m_impedancePosPDs;
-		
-		//Motor
+
+    //Motor
     std::vector<std::string> m_motorJointNames;
-		std::vector<int> m_motor_idx; // keeps track of which joint is the motor associated with, need to implement a smarter way
-		std::vector<int> m_joint_idx; // keeps track of which joint is the motor associated with
-		std::vector<gazebo::physics::JointPtr> m_motorJointPointers; /* pointers for each joint, avoiding several calls to getJoint(joint_name) */
+    std::vector<int> m_motor_idx; // keeps track of which joint is the motor associated with, need to implement a smarter way
+    std::vector<int> m_joint_idx; // keeps track of which joint is the motor associated with
+    std::vector<gazebo::physics::JointPtr> m_motorJointPointers; /* pointers for each joint, avoiding several calls to getJoint(joint_name) */
 
     yarp::sig::Vector m_torqueOffsett;
     yarp::sig::Vector m_minStiffness;
@@ -433,8 +433,8 @@ private:
     void sendImpPositionsToGazebo ( yarp::sig::Vector& dess );
     void computeTrajectory(const int j);
     void prepareResetJointMsg(int j);
-		
-		// Motor
+
+    // Motor
     void computeMotorTrajectory(const int j);
 
 };
