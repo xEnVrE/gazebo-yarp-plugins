@@ -35,6 +35,7 @@ namespace yarp {
 namespace gazebo {
     namespace common {
         class UpdateInfo;
+        class Time;
     }
 
     namespace physics {
@@ -346,8 +347,8 @@ private:
     unsigned int m_numberOfJoints; /**< number of joints controlled by the control board */
     std::vector<Range> m_jointLimits;
 
-    // Motor data for elastic jointss
-    unsigned int m_numberOfElasticJoints; /**< number of elastic joints controlled by the control board */
+    // Motor data
+    unsigned int m_numberOfMotorJoints; /**< number of motors controlled by the control board */
 
     /**
      * The zero position is the position of the GAZEBO joint that will be read as the starting one
@@ -394,8 +395,7 @@ private:
 
     //Motor
     std::vector<std::string> m_motorJointNames;
-    std::vector<int> m_motor_idx; // keeps track of which joint is the motor associated with, need to implement a smarter way
-    std::vector<int> m_joint_idx; // keeps track of which joint is the motor associated with
+    std::vector<int> joint_motor_map; // maps joints with motors, contains the corresponding motor joint index
     std::vector<gazebo::physics::JointPtr> m_motorJointPointers; /* pointers for each joint, avoiding several calls to getJoint(joint_name) */
 
     yarp::sig::Vector m_torqueOffsett;
@@ -420,8 +420,8 @@ private:
     void setPIDsForGroup(std::string, std::vector<GazeboYarpControlBoardDriver::PID>&, enum PIDFeedbackTerm pidTerms);
     void setMinMaxImpedance();
     void setPIDs(); //WORKS
-    bool sendPositionsToGazebo(yarp::sig::Vector& refs);
-    bool sendPositionToGazebo(int j,double ref);
+    bool sendPositionsToGazebo(yarp::sig::Vector& refs, gazebo::common::Time stepTime);
+    bool sendPositionToGazebo(int j,double ref, gazebo::common::Time stepTime);
     void prepareJointMsg(gazebo::msgs::JointCmd& j_cmd, const int joint_index, const double ref);  //WORKS
     bool sendVelocitiesToGazebo(yarp::sig::Vector& refs); //NOT TESTED
     bool sendVelocityToGazebo(int j,double ref); //NOT TESTED
@@ -433,9 +433,6 @@ private:
     void sendImpPositionsToGazebo ( yarp::sig::Vector& dess );
     void computeTrajectory(const int j);
     void prepareResetJointMsg(int j);
-
-    // Motor
-    void computeMotorTrajectory(const int j);
 
 };
 

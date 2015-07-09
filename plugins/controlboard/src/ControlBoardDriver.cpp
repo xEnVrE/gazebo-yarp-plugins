@@ -63,11 +63,11 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     m_maxDamping.resize(m_numberOfJoints, 100.0);
     
     //motor
-    m_numberOfElasticJoints = m_motorJointNames.size();
-    m_motor_zeroPosition.resize(m_numberOfElasticJoints);
-    m_motor_positions.resize(m_numberOfElasticJoints);
-    m_motor_velocities.resize(m_numberOfElasticJoints);
-    m_motor_torques.resize(m_numberOfElasticJoints);
+    m_numberOfMotorJoints = m_motorJointNames.size();
+    m_motor_zeroPosition.resize(m_numberOfMotorJoints);
+    m_motor_positions.resize(m_numberOfMotorJoints);
+    m_motor_velocities.resize(m_numberOfMotorJoints);
+    m_motor_torques.resize(m_numberOfMotorJoints);
 
     setMinMaxPos();
     setMinMaxImpedance();
@@ -131,15 +131,15 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
 
         for (unsigned int i = 0; i < m_numberOfJoints; ++i) {
 #if GAZEBO_MAJOR_VERSION >= 4
-            if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
-              m_motorJointPointers[m_joint_idx[i]]->SetPosition(0,initial_config[i]);
+            if(m_numberOfMotorJoints > 0 && joint_motor_map[i] != -1)
+              m_motorJointPointers[joint_motor_map[i]]->SetPosition(0,initial_config[i]);
             else
               m_jointPointers[i]->SetPosition(0,initial_config[i]);
 #else
             gazebo::math::Angle a;
             a.SetFromRadian(initial_config[i]);
-            if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
-              m_motorJointPointers[m_joint_idx[i]]->SetAngle(0,a);
+            if(m_numberOfMotorJoints > 0 && joint_motor_map[i] != -1)
+              m_motorJointPointers[joint_motor_map[i]]->SetAngle(0,a);
             else
               m_jointPointers[i]->SetAngle(0,a);
 #endif
@@ -167,19 +167,21 @@ void GazeboYarpControlBoardDriver::computeTrajectory(const int j)
 void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _info)
 {
     m_clock++;
+    
+    gazebo::common::Time stepTime = _info.simTime.Double() - m_lastTimestamp.getTime();
 
     if (!started) {//This is a simple way to start with the robot in standing position
         started = true;
         for (unsigned int j = 0; j < m_numberOfJoints; ++j)
-            if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
-              sendPositionToGazebo (j, m_motor_positions[m_joint_idx[j]]);
+            if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1)
+              sendPositionToGazebo (j, m_motor_positions[joint_motor_map[j]],stepTime);
             else
-              sendPositionToGazebo (j, m_positions[j]);
+              sendPositionToGazebo (j, m_positions[j],stepTime);
     }
 
     // Sensing motor position & torque, only if there are motor side joints
     // These values will be added to the joint side
-    if(m_numberOfElasticJoints > 0)
+    if(m_numberOfMotorJoints > 0)
     {
       for (unsigned int motor_jnt_cnt = 0; motor_jnt_cnt < m_motorJointPointers.size(); motor_jnt_cnt++) {
   //TODO: consider multi-dof joint ?
@@ -192,11 +194,11 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
     // Sensing position & torque
     for (unsigned int jnt_cnt = 0; jnt_cnt < m_jointPointers.size(); jnt_cnt++) {
 //TODO: consider multi-dof joint ?
-        if(m_numberOfElasticJoints > 0 && m_joint_idx[jnt_cnt] != -1)
+        if(m_numberOfMotorJoints > 0 && joint_motor_map[jnt_cnt] != -1)
         {
-          m_positions[jnt_cnt] = m_motor_positions[m_joint_idx[jnt_cnt]] + m_jointPointers[jnt_cnt]->GetAngle (0).Degree();
-          m_velocities[jnt_cnt] = m_motor_velocities[m_joint_idx[jnt_cnt]] + GazeboYarpPlugins::convertRadiansToDegrees(m_jointPointers[jnt_cnt]->GetVelocity(0));
-          m_torques[jnt_cnt] = m_motor_torques[m_joint_idx[jnt_cnt]] + m_jointPointers[jnt_cnt]->GetForce(0u);
+          m_positions[jnt_cnt] = m_motor_positions[joint_motor_map[jnt_cnt]] + m_jointPointers[jnt_cnt]->GetAngle (0).Degree();
+          m_velocities[jnt_cnt] = m_motor_velocities[joint_motor_map[jnt_cnt]] + GazeboYarpPlugins::convertRadiansToDegrees(m_jointPointers[jnt_cnt]->GetVelocity(0));
+          m_torques[jnt_cnt] = m_motor_torques[joint_motor_map[jnt_cnt]] + m_jointPointers[jnt_cnt]->GetForce(0u);
         }
         else
         {
@@ -219,7 +221,7 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
                 if (m_controlMode[j] == VOCAB_CM_POSITION) {
                     computeTrajectory(j);
                 }
-                sendPositionToGazebo(j, m_referencePositions[j]);
+                sendPositionToGazebo(j, m_referencePositions[j],stepTime);
             }
         } else if ((m_controlMode[j] == VOCAB_CM_VELOCITY) && (m_interactionMode[j] == VOCAB_IM_STIFF)) {//set vmo joint value
             if (m_clock % _T_controller == 0) {
@@ -250,10 +252,10 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
 void GazeboYarpControlBoardDriver::setMinMaxPos()
 {
     for(unsigned int i = 0; i < m_numberOfJoints; ++i) {
-        if(m_numberOfElasticJoints > 0 && m_joint_idx[i] != -1)
+        if(m_numberOfMotorJoints > 0 && joint_motor_map[i] != -1)
         {
-          m_jointLimits[i].max = m_motorJointPointers[m_joint_idx[i]]->GetUpperLimit(0).Degree();
-          m_jointLimits[i].min = m_motorJointPointers[m_joint_idx[i]]->GetLowerLimit(0).Degree();
+          m_jointLimits[i].max = m_motorJointPointers[joint_motor_map[i]]->GetUpperLimit(0).Degree();
+          m_jointLimits[i].min = m_motorJointPointers[joint_motor_map[i]]->GetLowerLimit(0).Degree();
         }
         else
         {
@@ -288,7 +290,7 @@ bool GazeboYarpControlBoardDriver::setJointNames()  //WORKS
 
     m_jointNames.resize(nr_of_joints);
     m_jointPointers.resize(nr_of_joints);
-    m_joint_idx.resize(nr_of_joints, -1);
+    joint_motor_map.resize(nr_of_joints, -1);
     
     if(advanced)// count number of elastic joints
     { 
@@ -298,7 +300,6 @@ bool GazeboYarpControlBoardDriver::setJointNames()  //WORKS
       }
     }
     
-    m_motor_idx.resize(nr_of_elastic_joints, -1);
     m_motorJointNames.resize(nr_of_elastic_joints);
     m_motorJointPointers.resize(nr_of_elastic_joints);
 
@@ -343,8 +344,7 @@ bool GazeboYarpControlBoardDriver::setJointNames()  //WORKS
                 elastic_joint_found = true;
                 m_motorJointNames[elastic_joint_idx] = gazebo_joint_name;
                 m_motorJointPointers[elastic_joint_idx] = this->m_robot->GetJoint(gazebo_joint_name);
-                m_motor_idx[elastic_joint_idx] = i;
-                m_joint_idx[i] = elastic_joint_idx;
+                joint_motor_map[i] = elastic_joint_idx;
                 elastic_joint_idx++;
             }
           }
@@ -483,35 +483,62 @@ void GazeboYarpControlBoardDriver::setPIDs()
     setPIDsForGroup("GAZEBO_IMPEDANCE_POSITION_PIDS", m_impedancePosPDs, PIDFeedbackTerm(PIDFeedbackTermProportionalTerm | PIDFeedbackTermDerivativeTerm));
 }
 
-bool GazeboYarpControlBoardDriver::sendPositionsToGazebo(Vector &refs)
+bool GazeboYarpControlBoardDriver::sendPositionsToGazebo(Vector &refs, gazebo::common::Time stepTime)
 {
+    if(stepTime == 0)
+      return false;
+    
     for (unsigned int j=0; j<m_numberOfJoints; j++) {
-        sendPositionToGazebo(j,refs[j]);
+        sendPositionToGazebo(j, refs[j], stepTime);
     }
     return true;
 }
 
-bool GazeboYarpControlBoardDriver::sendPositionToGazebo(int j,double ref)
+bool GazeboYarpControlBoardDriver::sendPositionToGazebo(int j, double ref, gazebo::common::Time stepTime)
 {
-    gazebo::msgs::JointCmd j_cmd;
-    prepareJointMsg(j_cmd,j,ref);
-    m_jointCommandPublisher->WaitForConnection();
-    m_jointCommandPublisher->Publish(j_cmd);
+// Old method
+//     gazebo::msgs::JointCmd j_cmd;
+//     prepareJointMsg(j_cmd,j,ref);
+//     m_jointCommandPublisher->WaitForConnection();
+//     m_jointCommandPublisher->Publish(j_cmd);
+  
+// New method
+    if(stepTime == 0)
+      return false;
+    
+    gazebo::common::PID positionPID;
+    positionPID.SetPGain(m_positionPIDs[j].p);
+    positionPID.SetIGain(m_positionPIDs[j].i);
+    positionPID.SetDGain(m_positionPIDs[j].d);
+    double cmd;
+    double err;
+    if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1)
+      err = m_motorJointPointers[joint_motor_map[j]]->GetAngle(0).Radian() + m_jointPointers[j]->GetAngle(0).Radian() - GazeboYarpPlugins::convertDegreesToRadians(ref);
+    else
+      err = m_jointPointers[j]->GetAngle(0).Radian() - GazeboYarpPlugins::convertDegreesToRadians(ref);    
+    
+    cmd = positionPID.Update(err,stepTime);
+    
+    if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1)
+      m_motorJointPointers[joint_motor_map[j]]->SetForce(0, cmd);
+    else
+      m_jointPointers[j]->SetForce(0, cmd);
+    
     return true;
 }
 
 void GazeboYarpControlBoardDriver::prepareJointMsg(gazebo::msgs::JointCmd& j_cmd, const int joint_index, const double ref)  //WORKS
 {
-    GazeboYarpControlBoardDriver::PID positionPID = m_positionPIDs[joint_index];
-
-    if(m_numberOfElasticJoints > 0 && m_joint_idx[joint_index] != -1)
-      j_cmd.set_name(m_motorJointPointers[m_joint_idx[joint_index]]->GetScopedName());
-    else
-      j_cmd.set_name(m_jointPointers[joint_index]->GetScopedName());
-    j_cmd.mutable_position()->set_target(GazeboYarpPlugins::convertDegreesToRadians(ref));
-    j_cmd.mutable_position()->set_p_gain(positionPID.p);
-    j_cmd.mutable_position()->set_i_gain(positionPID.i);
-    j_cmd.mutable_position()->set_d_gain(positionPID.d);
+//     GazeboYarpControlBoardDriver::PID positionPID = m_positionPIDs[joint_index];
+// 
+//     if(m_numberOfMotorJoints > 0 && joint_motor_map[joint_index] != -1)
+//       j_cmd.set_name(m_motorJointPointers[joint_motor_map[joint_index]]->GetScopedName());
+//     else
+//       j_cmd.set_name(m_jointPointers[joint_index]->GetScopedName());
+//     j_cmd.mutable_position()->set_target(GazeboYarpPlugins::convertDegreesToRadians(ref));
+//     j_cmd.mutable_position()->set_p_gain(positionPID.p);
+//     j_cmd.mutable_position()->set_i_gain(positionPID.i);
+//     j_cmd.mutable_position()->set_d_gain(positionPID.d);
 }
 
 bool GazeboYarpControlBoardDriver::sendVelocitiesToGazebo(yarp::sig::Vector& refs) //NOT TESTED
@@ -548,8 +575,8 @@ void GazeboYarpControlBoardDriver::prepareJointVelocityMsg(gazebo::msgs::JointCm
 {
     GazeboYarpControlBoardDriver::PID velocityPID = m_velocityPIDs[j];
     
-    if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
-      j_cmd.set_name(m_motorJointPointers[m_joint_idx[j]]->GetScopedName());
+    if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1)
+      j_cmd.set_name(m_motorJointPointers[joint_motor_map[j]]->GetScopedName());
     else
       j_cmd.set_name(m_jointPointers[j]->GetScopedName());
 //    j_cmd.mutable_position()->set_p_gain(0.0);
@@ -588,8 +615,8 @@ bool GazeboYarpControlBoardDriver::sendTorqueToGazebo(const int j,const double r
 
 void GazeboYarpControlBoardDriver::prepareJointTorqueMsg(gazebo::msgs::JointCmd& j_cmd, const int j, const double ref) //NOT TESTED
 {
-    if(m_numberOfElasticJoints > 0 && m_joint_idx[j] != -1)
-      j_cmd.set_name(m_motorJointPointers[m_joint_idx[j]]->GetScopedName());
+    if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1)
+      j_cmd.set_name(m_motorJointPointers[joint_motor_map[j]]->GetScopedName());
     else
       j_cmd.set_name(m_jointPointers[j]->GetScopedName());
 //    j_cmd.mutable_position()->set_p_gain(0.0);
