@@ -422,15 +422,12 @@ private:
     void setPIDs(); //WORKS
     bool sendPositionsToGazebo(yarp::sig::Vector& refs, gazebo::common::Time stepTime);
     bool sendPositionToGazebo(int j,double ref, gazebo::common::Time stepTime);
-    void prepareJointMsg(gazebo::msgs::JointCmd& j_cmd, const int joint_index, const double ref);  //WORKS
-    bool sendVelocitiesToGazebo(yarp::sig::Vector& refs); //NOT TESTED
-    bool sendVelocityToGazebo(int j,double ref); //NOT TESTED
-    void prepareJointVelocityMsg(gazebo::msgs::JointCmd& j_cmd, const int j, const double ref); //NOT TESTED
-    bool sendTorquesToGazebo(yarp::sig::Vector& refs); //NOT TESTED
-    bool sendTorqueToGazebo(const int j,const double ref); //NOT TESTED
-    void prepareJointTorqueMsg(gazebo::msgs::JointCmd& j_cmd, const int j, const double ref); //NOT TESTED
-    void sendImpPositionToGazebo ( const int j, const double des );
-    void sendImpPositionsToGazebo ( yarp::sig::Vector& dess );
+    bool sendVelocitiesToGazebo(yarp::sig::Vector& refs, gazebo::common::Time stepTime); //NOT TESTED
+    bool sendVelocityToGazebo(int j, double ref, gazebo::common::Time stepTime); //NOT TESTED
+    bool sendTorquesToGazebo(yarp::sig::Vector& refs, gazebo::common::Time stepTime); //NOT TESTED
+    bool sendTorqueToGazebo(const int j,const double ref, gazebo::common::Time stepTime); //NOT TESTED
+    void sendImpPositionToGazebo ( const int j, const double des, gazebo::common::Time stepTime);
+    void sendImpPositionsToGazebo ( yarp::sig::Vector& dess, gazebo::common::Time stepTime);
     void computeTrajectory(const int j);
     void prepareResetJointMsg(int j);
 

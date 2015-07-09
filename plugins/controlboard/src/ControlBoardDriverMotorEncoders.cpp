@@ -120,7 +120,10 @@ bool GazeboYarpControlBoardDriver::getMotorEncoderSpeeds(double *spds) //NOT TES
 {
     if (!spds) return false;
     for (unsigned int i = 0; i < m_numberOfJoints; ++i) {
-        getMotorEncoderSpeed(i, &spds[i]);
+        if(m_numberOfMotorJoints > 0 && joint_motor_map[i] != -1)
+          getMotorEncoderSpeed(i, &spds[i]);
+        else
+          spds[i] = 0;
     }
     return true;
 }
