@@ -520,21 +520,6 @@ bool GazeboYarpControlBoardDriver::sendPositionToGazebo(int j, double ref, gazeb
     else
       m_jointPointers[j]->SetForce(0, cmd);
     
-//     // Debug outputs
-//     std::cout << stepTime.Double() << std:: endl;
-//     std::cout << "PID: " << m_positionPIDs[j].p << " " << m_positionPIDs[j].i << " " << m_positionPIDs[j].d << std:: endl;
-//     double pe,ie,de;
-//     if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1)
-//     {
-//       positionPID.GetErrors(pe,ie,de);
-//       std::cout << "Joint " << m_motorJointNames[joint_motor_map[j]] << cmd << ", err: " << err << ", pidErr: " << pe << "," << ie << "," << de  << std::endl;
-//     }
-//     else
-//     {
-//       positionPID.GetErrors(pe,ie,de);
-//       std::cout << "Joint " << m_jointNames[j] << cmd << ", err: " << err << ", pidErr: " << pe << "," << ie << "," << de  << std::endl;
-//     }
-    
     return true;
 }
 
