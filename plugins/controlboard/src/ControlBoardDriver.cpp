@@ -62,8 +62,8 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     m_minDamping.resize(m_numberOfJoints, 0.0);
     m_maxDamping.resize(m_numberOfJoints, 100.0);
     
-    m_positionGazeboPIDs.reserve(m_numberOfJoints);
-    m_velocityGazeboPIDs.reserve(m_numberOfJoints);
+    m_positionGazeboPIDs.resize(m_numberOfJoints);
+    m_velocityGazeboPIDs.resize(m_numberOfJoints);
     
     //motor
     m_numberOfMotorJoints = m_motorJointNames.size();
@@ -148,6 +148,7 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
 #endif
         }
     }
+    
     return true;
 }
 
@@ -536,21 +537,6 @@ bool GazeboYarpControlBoardDriver::sendPositionToGazebo(int j, double ref, gazeb
       m_motorJointPointers[joint_motor_map[j]]->SetForce(0, cmd);
     else
       m_jointPointers[j]->SetForce(0, cmd);
-    
-//     // Debug outputs
-//     std::cout << stepTime.Double() << std:: endl;
-//     std::cout << "PID: " << m_positionPIDs[j].p << " " << m_positionPIDs[j].i << " " << m_positionPIDs[j].d << std:: endl;
-//     double pe,ie,de;
-//     if(isJointMotor(j))
-//     {
-//       m_positionGazeboPIDs[j].GetErrors(pe,ie,de);
-//       std::cout << "Joint " << m_motorJointNames[joint_motor_map[j]] << cmd << ", err: " << err << ", pidErr: " << pe << "," << ie << "," << de  << std::endl;
-//     }
-//     else
-//     {
-//       m_positionGazeboPIDs[j].GetErrors(pe,ie,de);
-//       std::cout << "Joint " << m_jointNames[j] << cmd << ", err: " << err << ", pidErr: " << pe << "," << ie << "," << de  << std::endl;
-//     }
     
     return true;
 }
