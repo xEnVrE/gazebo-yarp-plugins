@@ -12,7 +12,7 @@ using namespace yarp::dev;
 bool GazeboYarpControlBoardDriver::getMotorEncoder(int j, double *v)  //NOT TESTED
 {
     if (v && j >= 0 && j < (int)m_numberOfJoints) {
-        if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1){
+        if(isJointMotor(j)){
           *v = m_motor_positions[joint_motor_map[j]]-m_motor_zeroPosition[joint_motor_map[j]];
           return true;
         }
@@ -24,7 +24,7 @@ bool GazeboYarpControlBoardDriver::getMotorEncoders(double *encs)  //NOT TESTED
 {
     if (!encs) return false;
     for (unsigned int i = 0; i < m_numberOfJoints; ++i) {
-        if(m_numberOfMotorJoints > 0 && joint_motor_map[i] != -1)
+        if(isJointMotor(i))
           encs[i] = m_motor_positions[joint_motor_map[i]]-m_motor_zeroPosition[joint_motor_map[i]];
         else
           encs[i]  = 0;
@@ -36,7 +36,7 @@ bool GazeboYarpControlBoardDriver::getMotorEncodersTimed(double *encs, double *t
 {
     double my_time = m_lastTimestamp.getTime();
     for (unsigned int i = 0; i <m_numberOfJoints; ++i) {
-        if(m_numberOfMotorJoints > 0 && joint_motor_map[i] != -1)
+        if(isJointMotor(i))
           encs[i] = m_motor_positions[joint_motor_map[i]]-m_motor_zeroPosition[joint_motor_map[i]];
         else
           encs[i]  = 0;
@@ -49,7 +49,7 @@ bool GazeboYarpControlBoardDriver::getMotorEncodersTimed(double *encs, double *t
 bool GazeboYarpControlBoardDriver::getMotorEncoderTimed(int j, double *encs, double *time)  //NOT TESTED
 {
     if (time && encs && j >= 0 && j < (int)m_numberOfJoints) {
-        if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1){
+        if(isJointMotor(j)){
           *encs = m_motor_positions[joint_motor_map[j]]-m_motor_zeroPosition[joint_motor_map[j]];
           *time = m_lastTimestamp.getTime();
           return true;
@@ -65,7 +65,7 @@ bool GazeboYarpControlBoardDriver::getMotorEncoderTimed(int j, double *encs, dou
 bool GazeboYarpControlBoardDriver::resetMotorEncoder(int j)  //NOT TESTED
 {
     if (j >= 0 && j < (int)m_numberOfJoints) {
-        if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1)
+        if(isJointMotor(j))
         {
           m_motor_zeroPosition[joint_motor_map[j]] = m_motor_positions[joint_motor_map[j]];
           return true;
@@ -77,7 +77,7 @@ bool GazeboYarpControlBoardDriver::resetMotorEncoder(int j)  //NOT TESTED
 bool GazeboYarpControlBoardDriver::resetMotorEncoders()  //NOT TESTED
 {
     for (unsigned int j = 0; j < m_numberOfJoints; j++) {
-        if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1)
+        if(isJointMotor(j))
           m_motor_zeroPosition[joint_motor_map[j]] = m_motor_positions[joint_motor_map[j]];
     }
     return true;
@@ -86,7 +86,7 @@ bool GazeboYarpControlBoardDriver::resetMotorEncoders()  //NOT TESTED
 bool GazeboYarpControlBoardDriver::setMotorEncoder(int j, double val)  //NOT TESTED
 {
     if (j >= 0 && j < (int)m_numberOfJoints) {
-        if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1)
+        if(isJointMotor(j))
         {
           m_motor_zeroPosition[joint_motor_map[j]] = m_motor_positions[joint_motor_map[j]] - val;
           return true;
@@ -98,7 +98,7 @@ bool GazeboYarpControlBoardDriver::setMotorEncoder(int j, double val)  //NOT TES
 bool GazeboYarpControlBoardDriver::setMotorEncoders(const double *vals)  //NOT TESTED
 {
     for (unsigned int j = 0; j < m_numberOfJoints; j++) {
-        if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1)
+        if(isJointMotor(j))
           m_motor_zeroPosition[joint_motor_map[j]] = m_motor_positions[joint_motor_map[j]] - vals[j];
     }
     return true;
@@ -108,7 +108,7 @@ bool GazeboYarpControlBoardDriver::setMotorEncoders(const double *vals)  //NOT T
 bool GazeboYarpControlBoardDriver::getMotorEncoderSpeed(int j, double *sp)  //NOT TESTED
 {
     if (sp && j >= 0 && j < (int)m_numberOfJoints) {
-        if(m_numberOfMotorJoints > 0 && joint_motor_map[j] != -1){
+        if(isJointMotor(j)){
           *sp = m_motor_velocities[joint_motor_map[j]];
           return true;
         }
@@ -120,7 +120,7 @@ bool GazeboYarpControlBoardDriver::getMotorEncoderSpeeds(double *spds) //NOT TES
 {
     if (!spds) return false;
     for (unsigned int i = 0; i < m_numberOfJoints; ++i) {
-        if(m_numberOfMotorJoints > 0 && joint_motor_map[i] != -1)
+        if(isJointMotor(i))
           getMotorEncoderSpeed(i, &spds[i]);
         else
           spds[i] = 0;

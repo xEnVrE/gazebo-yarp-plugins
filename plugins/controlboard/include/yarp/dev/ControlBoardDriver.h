@@ -36,6 +36,7 @@ namespace gazebo {
     namespace common {
         class UpdateInfo;
         class Time;
+        class PID;
     }
 
     namespace physics {
@@ -392,6 +393,9 @@ private:
     std::vector<GazeboYarpControlBoardDriver::PID> m_positionPIDs;
     std::vector<GazeboYarpControlBoardDriver::PID> m_velocityPIDs;
     std::vector<GazeboYarpControlBoardDriver::PID> m_impedancePosPDs;
+    
+    std::vector<gazebo::common::PID> m_positionGazeboPIDs;
+    std::vector<gazebo::common::PID> m_velocityGazeboPIDs;
 
     //Motor
     std::vector<std::string> m_motorJointNames;
@@ -420,6 +424,7 @@ private:
     void setPIDsForGroup(std::string, std::vector<GazeboYarpControlBoardDriver::PID>&, enum PIDFeedbackTerm pidTerms);
     void setMinMaxImpedance();
     void setPIDs(); //WORKS
+    void setGazeboPIDs();
     bool sendPositionsToGazebo(yarp::sig::Vector& refs, gazebo::common::Time stepTime);
     bool sendPositionToGazebo(int j,double ref, gazebo::common::Time stepTime);
     bool sendVelocitiesToGazebo(yarp::sig::Vector& refs, gazebo::common::Time stepTime); //NOT TESTED
@@ -430,6 +435,8 @@ private:
     void sendImpPositionsToGazebo ( yarp::sig::Vector& dess, gazebo::common::Time stepTime);
     void computeTrajectory(const int j);
     void prepareResetJointMsg(int j);
+    
+    bool isJointMotor(int j);
 
 };
 
