@@ -40,15 +40,7 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     std::cout<<"# Joints: "<<m_robot->GetJoints().size() <<std::endl;
     std::cout<<"# Links: "<<m_robot->GetLinks().size() <<std::endl;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     this->m_robotRefreshPeriod = (unsigned)(this->m_robot->GetWorld()->GetPhysicsEngine()->GetUpdatePeriod() * 1000.0);
-=======
-    this->m_robotRefreshPeriod = 0.01 * 1000.0;
->>>>>>> back to update info time step
-=======
-    this->m_robotRefreshPeriod = this->m_robot->GetWorld()->GetPhysicsEngine()->GetUpdatePeriod() * 1000.0;
->>>>>>> first working draft
     if (!setJointNames()) return false;
 
     m_numberOfJoints = m_jointNames.size();
