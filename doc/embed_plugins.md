@@ -19,7 +19,7 @@ The plugins/devices currently implemented are:
 | Control Board (encoder readings, motor control, ...)  | GazeboYarpControBoard | GazeboYarpControBoardDriver |
 | 6-Axis Force Torque sensor| GazeboYarpForceTorque |  GazeboYarpForceTorqueDriver |
 | Inertial Measurement Unit | GazeboYarpIMU | GazeboYarpIMUDriver |
-| Network of Distributed  Inertial Measurement Units |   | 
+| Network of Distributed Inertial Measurement Units |   | 
 
 
 ## Using the plugins in Gazebo Models
