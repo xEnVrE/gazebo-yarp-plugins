@@ -106,10 +106,26 @@ bool GazeboYarpCameraDriver::open(yarp::os::Searchable& config)
         return false;
     }
 
+    //open rpc port
+    if (config.check("name")) 
+    {
+       m_rpcPortName = config.find("name").asString()+"rpc";
+       if(!m_rpcPort.open(m_rpcPortName))
+       {
+         yError() << "Failed to open port " << m_rpcPortName;
+       }
+       else
+       {
+         yInfo() << "Opened control port " << m_rpcPortName;
+         m_rpcPort.setReader(*this);
+       }
+    }
+    
     if (config.check("vertical_flip")) m_vertical_flip =true;
     if (config.check("horizontal_flip")) m_horizontal_flip =true;
     if (config.check("display_timestamp")) m_display_timestamp =true;
     if (config.check("display_time_box")) m_display_time_box =true;
+
 
 #if GAZEBO_MAJOR_VERSION >= 7
     m_camera = m_parentSensor->Camera();
@@ -153,9 +169,93 @@ bool GazeboYarpCameraDriver::close()
         m_parentSensor = NULL;
     }
     
+    if (m_rpcPort.isOpen())
+    {
+      m_rpcPort.interrupt();
+      m_rpcPort.close();
+    }
+    
     delete[] m_imageBuffer;
     m_imageBuffer = 0;
 
+    return true;
+}
+
+bool GazeboYarpCameraDriver::setImageProperties (const double angle_hfov, const size_t width, const size_t height)
+{
+    m_dataMutex.wait();   
+    m_parentSensor->SetActive(false);
+    m_camera->SetCaptureData(false);
+    m_camera->DisconnectNewImageFrame(this->m_updateConnection);
+ //   m_parentSensor->Update(false);
+    yarp::os::Time::delay(0.5);
+    
+#if GAZEBO_MAJOR_VERSION >= 7
+    m_camera->SetHFOV(ignition::math::Angle(angle_hfov));
+    m_camera->SetImageSize(width,height);      
+    //m_camera->SetImageWidth(width);
+    //m_camera->SetImageHeight(height);
+    //m_camera->Update();
+    m_camera->Load();
+#else
+    m_camera->SetHFOV(gazebo::math::Angle(angle_hfov));
+    m_camera->SetImageSize(width,height); 
+    //m_camera->SetImageWidth(width);
+    //m_camera->SetImageHeight(height);
+    //m_camera->Update();
+     m_camera->Load();
+#endif
+    
+         yarp::os::Time::delay(0.5);
+    m_width  = width;
+    m_height = height;
+    m_bufferSize = 3*m_width*m_height;
+
+    if (m_imageBuffer)
+    {
+        delete [] m_imageBuffer;
+        m_imageBuffer = 0;
+    }
+    
+    m_imageBuffer = new unsigned char[3*m_width*m_height];
+    memset(m_imageBuffer, 0x00, 3*m_width*m_height);
+    m_lastTimestamp.update();
+    
+    this->m_updateConnection = m_camera->ConnectNewImageFrame(boost::bind(&GazeboYarpCameraDriver::captureImage, this, _1, _2, _3, _4, _5));
+    m_parentSensor->SetActive(true);
+    m_camera->SetCaptureData(true);
+   // m_parentSensor->Update(true);
+    m_dataMutex.post();
+    
+    return true;
+}
+
+bool GazeboYarpCameraDriver::read (yarp::os::ConnectionReader& connection)
+{
+    yarp::os::Bottle in,out;
+    bool ok = in.read(connection);
+    if (!ok) {return false;}
+    std::string cmd = in.get(0).asString();
+    if (cmd == "set_cam")
+    {
+       double hfov   = in.get(1).asDouble();
+       double width  = in.get(2).asDouble();
+       double height = in.get(3).asDouble();
+
+       this->setImageProperties (hfov/180.0*3.14, width, height);
+       yError() << "image properties changed";
+       out.clear();
+       out.addString("ok");
+    }
+    else
+    {
+      yError() << "Unknown command";
+    }
+    yarp::os::ConnectionWriter *rts =connection.getWriter();
+    if (rts != NULL)
+    {
+        out.write(*rts);
+    }
     return true;
 }
 
@@ -166,12 +266,19 @@ bool GazeboYarpCameraDriver::captureImage(const unsigned char *_image,
                           unsigned int _width, unsigned int _height,
                           unsigned int _depth, const std::string &_format)
 {
+     yWarning() << _width << _height << _depth << _format;
+    if (_width !=  m_width || _height !=  m_height )
+    {
+        yWarning("Image resize in progress, skipping frame");
+        return false;
+    }
+      
     m_dataMutex.wait();
 
 #if GAZEBO_MAJOR_VERSION >= 7
     if(m_parentSensor->IsActive())
         memcpy(m_imageBuffer, m_parentSensor->ImageData(), m_bufferSize);
-
+ 
     m_lastTimestamp.update(this->m_parentSensor->LastUpdateTime().Double());
 #else
     if(m_parentSensor->IsActive())
@@ -199,6 +306,8 @@ bool GazeboYarpCameraDriver::captureImage(const unsigned char *_image,
 bool GazeboYarpCameraDriver::getImage(yarp::sig::ImageOf<yarp::sig::PixelRgb>& _image)
 {
      m_dataMutex.wait();
+     
+     
     _image.resize(m_width, m_height);
 
     unsigned char *pBuffer = _image.getRawImage();

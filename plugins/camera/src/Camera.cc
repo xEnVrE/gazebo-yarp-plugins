@@ -30,7 +30,7 @@ GazeboYarpCamera::~GazeboYarpCamera()
     m_cameraDriver.close();
     GazeboYarpPlugins::Handler::getHandler()->removeSensor(m_sensorName);
 }
-
+ 
 void GazeboYarpCamera::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf)
 {
     if (!m_yarp.checkNetwork(GazeboYarpPlugins::yarpNetworkInitializationTimeout)) {

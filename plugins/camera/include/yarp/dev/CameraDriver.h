@@ -13,6 +13,9 @@
 #include <yarp/dev/PreciselyTimed.h>
 #include <yarp/os/Semaphore.h>
 #include <yarp/os/Time.h>
+#include <yarp/os/Port.h>
+#include <yarp/os/ConnectionReader.h>
+#include <yarp/os/ConnectionWriter.h>
 
 #include <boost/shared_ptr.hpp>
 #include <gazebo/rendering/Camera.hh>
@@ -44,7 +47,8 @@ extern const std::string YarpScopedName;
 class yarp::dev::GazeboYarpCameraDriver:
     virtual public yarp::dev::DeviceDriver,
     virtual public yarp::dev::IFrameGrabberImage,
-    virtual public yarp::dev::IPreciselyTimed
+    virtual public yarp::dev::IPreciselyTimed,
+    public yarp::os::PortReader
 {
 public:
     GazeboYarpCameraDriver();
@@ -85,6 +89,8 @@ public:
      */
     virtual int width() const;
 
+    virtual bool read (yarp::os::ConnectionReader& connection);
+    virtual bool setImageProperties (const double angle_hfov, const size_t width, const size_t height);
 
     /*
      * Get the image from the simulator and store it internally
@@ -116,6 +122,8 @@ private:
     gazebo::sensors::CameraSensor* m_parentSensor;
     gazebo::rendering::CameraPtr m_camera;
     gazebo::event::ConnectionPtr m_updateConnection;
+    std::string m_rpcPortName;
+    yarp::os::Port m_rpcPort;
     
     struct txt_type
     {
