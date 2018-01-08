@@ -44,4 +44,4 @@ add_subdirectory(modelposepublisher)
 add_subdirectory(basestate)
 add_subdirectory(configurationoverride)
 add_subdirectory(skin)
-
+add_subdirectory(fakepointcloud)
