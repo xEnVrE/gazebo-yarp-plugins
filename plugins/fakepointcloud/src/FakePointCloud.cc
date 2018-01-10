@@ -4,21 +4,27 @@
  * CopyPolicy: Released under the terms of the LGPLv2.1 or any later version, see LGPL.TXT or LGPL3.TXT
  */
 
-#include "FakePointCloud.hh"
-
+// gazebo
 #include <gazebo/physics/Model.hh>
 #include <gazebo/common/Events.hh>
 #include <gazebo/physics/PhysicsIface.hh>
 #include <gazebo/physics/World.hh>
 
+// GazeboYarpPlugins
 #include <GazeboYarpPlugins/common.h>
 
+// yarp
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
 
+// boost
 #include <boost/bind.hpp>
 
+// std
 #include <string>
+
+//
+#include "FakePointCloud.hh"
 
 GZ_REGISTER_MODEL_PLUGIN(gazebo::GazeboYarpFakePointCloud)
 
