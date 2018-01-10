@@ -38,7 +38,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
         return;
     }
 
-    // Clear last update timen
+    // Clear last update time
     m_lastUpdateTime = gazebo::common::Time(0.0);
     
     // Listen to the update event
@@ -58,7 +58,6 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
     // Update the fake point cloud if a period is elapsed
     if(currentTime - m_lastUpdateTime >= 1.0) {
 	gazebo::common::Time diff = currentTime - m_lastUpdateTime;
-	yInfo() << diff.Float();
 
 	// Store current time for next update
 	m_lastUpdateTime = currentTime;
