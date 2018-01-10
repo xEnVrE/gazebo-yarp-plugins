@@ -16,6 +16,8 @@
 // yarp
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
+#include <yarp/sig/all.h>
+#include <yarp/math/Math.h>
 
 // boost
 #include <boost/bind.hpp>
@@ -61,9 +63,28 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
     gazebo::common::Time currentTime = m_world->GetSimTime();
 #endif
     
-    // Update the fake point cloud if a period is elapsed
+    // Sample a new fake point cloud if a period is elapsed
+    // TODO: get period from the configuration file
     if(currentTime - m_lastUpdateTime >= 1.0) {
+	
+	// Evaluate time from the last update
 	gazebo::common::Time diff = currentTime - m_lastUpdateTime;
+
+	// Get the current pose of the object
+	gazebo::math::Pose cur_pose = m_model->GetWorldPose();;
+
+	// Fill yarp-like quantities
+	yarp::sig::Vector position;
+	yarp::math::Quaternion attitude;
+	
+	position.push_back(cur_pose.pos.x);
+	position.push_back(cur_pose.pos.y);
+	position.push_back(cur_pose.pos.z);
+
+	attitude = yarp::math::Quaternion(cur_pose.rot.x,
+					  cur_pose.rot.y,
+					  cur_pose.rot.z,
+					  cur_pose.rot.w);
 
 	// Store current time for next update
 	m_lastUpdateTime = currentTime;
