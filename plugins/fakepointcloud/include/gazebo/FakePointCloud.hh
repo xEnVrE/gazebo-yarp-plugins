@@ -7,8 +7,10 @@
 #ifndef GAZEBOYARP_FAKEPOINTCLOUD_HH
 #define GAZEBOYARP_FAKEPOINTCLOUD_HH
 
+// gazebo
 #include <gazebo/common/Plugin.hh>
 
+// yarp
 #include <yarp/os/Network.h>
 
 namespace gazebo
