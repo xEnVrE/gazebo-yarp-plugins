@@ -7,8 +7,6 @@
 #ifndef FAKEPOINTCLOUD_SAMPLER_HH
 #define FAKEPOINTCLOUD_SAMPLER_HH
 
-#include "PointCloud.h"
-
 // VCG
 #include <vcg/complex/complex.h>
 #include <vcg/complex/allocate.h>
@@ -18,6 +16,9 @@
 // yarp
 #include <yarp/sig/all.h>
 #include <yarp/math/Math.h>
+
+//
+#include "PointCloud.h"
 
 class vertex;
 class edge;
