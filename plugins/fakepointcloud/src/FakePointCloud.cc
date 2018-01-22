@@ -56,6 +56,25 @@ void GazeboYarpFakePointCloud::DeliverPointCloud()
     m_sampler.SamplePointCloud(m_nPoints, cloud);
 }
 
+std::string GazeboYarpFakePointCloud::GetModelName()
+{
+    // this function evaluates a name for the model
+    // taking into account the fact that it can be nested
+    // within another model
+    
+    // initialize with the name of the model
+    std::string name = m_model->GetName();
+
+    // attach names of all the ancestors
+    for(auto parent = m_model->GetParent(); parent != nullptr; parent = parent->GetParent()) {
+	// add parent name 
+	name = parent->GetName() + "_" + name;
+	yInfo() << name;
+    }
+	
+    return name;
+}
+
 void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
 
