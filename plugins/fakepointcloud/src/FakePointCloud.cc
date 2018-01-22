@@ -68,10 +68,9 @@ std::string GazeboYarpFakePointCloud::GetModelName()
     // attach names of all the ancestors
     for(auto parent = m_model->GetParent(); parent != nullptr; parent = parent->GetParent()) {
 	// add parent name 
-	name = parent->GetName() + "_" + name;
-	yInfo() << name;
+	name = parent->GetName() + "/" + name;
     }
-	
+    
     return name;
 }
 
