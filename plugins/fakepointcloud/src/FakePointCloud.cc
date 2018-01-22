@@ -67,9 +67,6 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
     // TODO: get period from the configuration file
     if(currentTime - m_lastUpdateTime >= 1.0) {
 	
-	// Evaluate time from the last update
-	gazebo::common::Time diff = currentTime - m_lastUpdateTime;
-
 	// Get the current pose of the object
 	gazebo::math::Pose cur_pose = m_model->GetWorldPose();;
 
