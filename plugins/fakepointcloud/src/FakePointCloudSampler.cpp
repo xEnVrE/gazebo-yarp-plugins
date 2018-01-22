@@ -75,6 +75,9 @@ void FakePointCloudSampler::TransformModel(simpleTriMesh &transformed)
     // duplicate the original mesh
     copyTriMesh::Mesh(transformed, m_mesh);
 
+    // update bounding box
+    vcg::tri::UpdateBounding<simpleTriMesh>::Box(transformed);
+
     // evaluate rototranslation matrix
     vcgHomMatrix Htransl;
     Htransl.SetTranslate(m_position[0],
