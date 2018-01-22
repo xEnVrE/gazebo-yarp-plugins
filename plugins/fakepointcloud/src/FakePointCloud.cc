@@ -137,7 +137,7 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
     
     // Sample a new fake point cloud if a period is elapsed
     // TODO: get period from the configuration file
-    if(currentTime - m_lastUpdateTime >= 1.0) {
+    if(currentTime - m_lastUpdateTime >= m_period) {
 	
 	// Store current time for next update
 	m_lastUpdateTime = currentTime;
