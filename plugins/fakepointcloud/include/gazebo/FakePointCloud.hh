@@ -12,6 +12,7 @@
 
 // yarp
 #include <yarp/os/Network.h>
+#include <yarp/os/BufferedPort.h>
 
 //
 #include "FakePointCloudSampler.h"
@@ -27,6 +28,8 @@ namespace gazebo
     class GazeboYarpFakePointCloud : public ModelPlugin
     {
     public:
+	~GazeboYarpFakePointCloud();
+	
 	/**
 	 * Store pointer to the model, load parameters from the SDF,
 	 * reset the time of the last update and
@@ -41,10 +44,16 @@ namespace gazebo
 	void OnWorldUpdate();
 	
     private:
+	
 	/**
 	 * Instance to yarp::os::Network
 	 */
 	yarp::os::Network m_yarp;
+
+	/**
+	 * Port where to send point clouds
+	 */
+	yarp::os::BufferedPort<PointCloud> m_portOut;
 
 	/**
 	 * Pointer to the model where the plugin is inserted
@@ -56,7 +65,6 @@ namespace gazebo
 	 */
 	gazebo::event::ConnectionPtr m_worldUpdateConnection;
 
-	
 	/**
 	 * Time of the last update of the plugin
 	 */
