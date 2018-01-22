@@ -174,6 +174,9 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
 	
 	// Store current time for next update
 	m_lastUpdateTime = currentTime;
+
+	// Deliver point cloud
+	DeliverPointCloud();
     }
 }
     
