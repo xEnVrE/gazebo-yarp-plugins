@@ -48,12 +48,15 @@ void GazeboYarpFakePointCloud::DeliverPointCloud()
 				      cur_pose.rot.y,
 				      cur_pose.rot.z,
 				      cur_pose.rot.w);
-    // set current pose
+    // Set current pose
     m_sampler.SetPose(position, attitude);
     
-    // sample the point cloud
-    PointCloud cloud;
+    // Sample the point cloud
+    PointCloud &cloud = m_portOut.prepare();    
     m_sampler.SamplePointCloud(m_nPoints, cloud);
+
+    // Deliver the point cloud
+    m_portOut.write();
 }
 
 std::string GazeboYarpFakePointCloud::GetModelName()
@@ -74,9 +77,14 @@ std::string GazeboYarpFakePointCloud::GetModelName()
     return name;
 }
 
+GazeboYarpFakePointCloud::~GazeboYarpFakePointCloud()
+{
+    // close the output port
+    m_portOut.close();
+}
+
 void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
-
     // Check yarp network availability
     if (!m_yarp.checkNetwork(GazeboYarpPlugins::yarpNetworkInitializationTimeout)) {
         yError() << "GazeboYarpFakePointCloud::Load error:"
@@ -90,6 +98,10 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     // Evaluate a name for the model
     std::string model_name = GetModelName();
 
+    // Open port
+    std::string port_name = "/" + model_name + "/fakepointcloud:o";
+    m_portOut.open(port_name);
+    
     // Load update period
     if (_sdf->HasElement("period")) {
 	// set update period
