@@ -13,6 +13,9 @@
 // yarp
 #include <yarp/os/Network.h>
 
+//
+#include "FakePointCloudSampler.h"
+
 namespace gazebo
 {
     /// \class GazeboFakePointCloud
@@ -34,6 +37,10 @@ namespace gazebo
 	gazebo::physics::WorldPtr m_world;	
 	gazebo::event::ConnectionPtr m_worldUpdateConnection;
 	gazebo::common::Time m_lastUpdateTime;
+
+	FakePointCloudSampler m_sampler;
+
+	void DeliverPointCloud();
     };
 }
 
