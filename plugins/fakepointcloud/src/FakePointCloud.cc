@@ -32,6 +32,31 @@ GZ_REGISTER_MODEL_PLUGIN(gazebo::GazeboYarpFakePointCloud)
 
 namespace gazebo {
 
+void GazeboYarpFakePointCloud::DeliverPointCloud()
+{
+    // Get the current pose of the object
+    gazebo::math::Pose cur_pose = m_model->GetWorldPose();
+
+    // Fill yarp-like quantities
+    yarp::sig::Vector position;
+    yarp::math::Quaternion attitude;
+	
+    position.push_back(cur_pose.pos.x);
+    position.push_back(cur_pose.pos.y);
+    position.push_back(cur_pose.pos.z);
+
+    attitude = yarp::math::Quaternion(cur_pose.rot.x,
+				      cur_pose.rot.y,
+				      cur_pose.rot.z,
+				      cur_pose.rot.w);
+    // set current pose
+    m_sampler.SetPose(position, attitude);
+    
+    // sample the point cloud
+    PointCloud cloud;
+    m_sampler.SamplePointCloud(100, cloud);
+}
+
 void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {    
     // Store pointer to the model
@@ -48,7 +73,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 
     // Clear last update time
     m_lastUpdateTime = gazebo::common::Time(0.0);
-    
+
     // Listen to the update event
     auto worldUpdateBind = boost::bind(&GazeboYarpFakePointCloud::OnWorldUpdate, this);
     m_worldUpdateConnection = gazebo::event::Events::ConnectWorldUpdateBegin(worldUpdateBind);
@@ -67,22 +92,6 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
     // TODO: get period from the configuration file
     if(currentTime - m_lastUpdateTime >= 1.0) {
 	
-	// Get the current pose of the object
-	gazebo::math::Pose cur_pose = m_model->GetWorldPose();
-
-	// Fill yarp-like quantities
-	yarp::sig::Vector position;
-	yarp::math::Quaternion attitude;
-	
-	position.push_back(cur_pose.pos.x);
-	position.push_back(cur_pose.pos.y);
-	position.push_back(cur_pose.pos.z);
-
-	attitude = yarp::math::Quaternion(cur_pose.rot.x,
-					  cur_pose.rot.y,
-					  cur_pose.rot.z,
-					  cur_pose.rot.w);
-
 	// Store current time for next update
 	m_lastUpdateTime = currentTime;
     }
