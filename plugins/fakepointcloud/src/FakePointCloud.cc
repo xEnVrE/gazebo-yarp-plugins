@@ -68,9 +68,6 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 
     // Store pointer to the model
     m_model = _parent;
-
-    // Store pointer to the world
-    m_world = m_model->GetWorld();
     
     // load update period
     if (_sdf->HasElement("period")) {
@@ -133,9 +130,9 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
 {    
     // Get current time
 #if GAZEBO_MAJOR_VERSION >= 8
-    gazebo::common::Time currentTime = m_world->SimTime();
+    gazebo::common::Time currentTime = m_model->GetWorld()->SimTime();
 #else
-    gazebo::common::Time currentTime = m_world->GetSimTime();
+    gazebo::common::Time currentTime = m_model->GetWorld()->GetSimTime();
 #endif
     
     // Sample a new fake point cloud if a period is elapsed
