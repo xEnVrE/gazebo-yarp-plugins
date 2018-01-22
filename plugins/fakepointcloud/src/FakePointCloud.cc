@@ -68,7 +68,7 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
     if(currentTime - m_lastUpdateTime >= 1.0) {
 	
 	// Get the current pose of the object
-	gazebo::math::Pose cur_pose = m_model->GetWorldPose();;
+	gazebo::math::Pose cur_pose = m_model->GetWorldPose();
 
 	// Fill yarp-like quantities
 	yarp::sig::Vector position;
