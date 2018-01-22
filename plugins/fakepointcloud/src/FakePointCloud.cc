@@ -53,7 +53,7 @@ void GazeboYarpFakePointCloud::DeliverPointCloud()
     
     // sample the point cloud
     PointCloud cloud;
-    m_sampler.SamplePointCloud(100, cloud);
+    m_sampler.SamplePointCloud(m_nPoints, cloud);
 }
 
 void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
@@ -98,6 +98,19 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     } else {
 	yError() << "GazeboYarpFakePointCloud::Load error:"
 	         << "failure in loading parameter 'observerOrigin' for model"
+		 << m_model->GetName();
+    }
+
+    // load number of points of the point cloud
+    if (_sdf->HasElement("numPoints")) {
+	// set number of points
+	m_nPoints = _sdf->Get<int>("numPoints");
+
+	yInfo() << "GazeboYarpFakePointCloud::Load number of points is"
+		<< m_nPoints;
+    } else {
+	yError() << "GazeboYarpFakePointCloud::Load error:"
+	         << "failure in loading parameter 'numPoints' for model"
 		 << m_model->GetName();
     }
 
