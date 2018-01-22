@@ -40,6 +40,8 @@ namespace gazebo
 
 	FakePointCloudSampler m_sampler;
 
+	double m_period;
+
 	void DeliverPointCloud();
     };
 }
