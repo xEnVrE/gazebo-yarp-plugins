@@ -7,6 +7,8 @@
 #ifndef FAKEPOINTCLOUD_SAMPLER_HH
 #define FAKEPOINTCLOUD_SAMPLER_HH
 
+#include "PointCloud.h"
+
 // VCG
 #include <vcg/complex/complex.h>
 #include <vcg/complex/allocate.h>
@@ -51,15 +53,6 @@ public:
 typedef vcg::tri::SurfaceSampling<simpleTriMesh,
 				  triMeshSampler> triMeshSurfSampler;
 typedef vcg::Matrix44<simpleTriMesh::ScalarType> homogMatrix;
-
-struct CloudItem
-{
-    yarp::sig::Vector point;
-    yarp::sig::Vector normal;
-    yarp::sig::PixelRgb rgb;
-
-    CloudItem() : point(3, 0.0), normal(3, 0.0) { };
-};
 
 class FakePointCloudSampler
 {    
@@ -108,11 +101,10 @@ public:
      * a number of points equal to the argument n_points.
      *
      * @param n_points the desired number of points
-     * @param cloud a std::vector<CloudItem> where each CloudItem
-     * is filled with the position of the point and its normal
+     * @param cloud a PointCloud cloud
      */
     void SamplePointCloud(const int &n_points,
-			  std::vector<CloudItem> &cloud);
+			  PointCloud &cloud);
 private:
     // triangular mesh object
     simpleTriMesh m_mesh;
