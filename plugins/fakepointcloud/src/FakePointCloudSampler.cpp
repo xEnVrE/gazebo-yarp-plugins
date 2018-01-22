@@ -98,7 +98,7 @@ void FakePointCloudSampler::TransformModel(simpleTriMesh &transformed)
 }
 
 void FakePointCloudSampler::SamplePointCloud(const int &n_points,
-					     std::vector<CloudItem> &cloud)
+					     PointCloud &cloud)
 {
     // transform the model using the current pose set
     simpleTriMesh mesh_cp;
@@ -108,7 +108,7 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
 
     // since this functions returns only points visible
     // to the observer, whose origin is stored in m_observer,
-    // greater number of points, n_points_eff, is sampled
+    // a greater number of points, n_points_eff, is sampled
     int n_points_eff = n_points * 2 + 25;
     
     // some default parametrs as found in MeshLab
@@ -174,10 +174,11 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
 	
 	// take the point if the angle is greater than 90 degrees
 	if(angle > M_PI/2.0) {
-	    CloudItem item;
+	    PointCloudItem item;
 	    
-	    item.point = point;
-	    item.normal = normal;
+	    item.x = point[0];
+	    item.y = point[1];
+	    item.z = point[2];	    
 	    cloud.push_back(item);
 	}
     }
