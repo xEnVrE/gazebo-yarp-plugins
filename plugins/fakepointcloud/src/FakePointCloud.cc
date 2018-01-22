@@ -7,7 +7,6 @@
 // gazebo
 #include <gazebo/physics/Model.hh>
 #include <gazebo/common/Events.hh>
-#include <gazebo/physics/PhysicsIface.hh>
 #include <gazebo/physics/World.hh>
 
 // GazeboYarpPlugins
@@ -58,17 +57,68 @@ void GazeboYarpFakePointCloud::DeliverPointCloud()
 }
 
 void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
-{    
+{
+
+    // Check yarp network availability
+    if (!m_yarp.checkNetwork(GazeboYarpPlugins::yarpNetworkInitializationTimeout)) {
+        yError() << "GazeboYarpFakePointCloud::Load error:"
+		 << "yarp network does not seem to be available, is the yarpserver running?";
+        return;
+    }
+
     // Store pointer to the model
     m_model = _parent;
 
     // Store pointer to the world
     m_world = m_model->GetWorld();
     
-    // Check yarp network availability
-    if (!m_yarp.checkNetwork(GazeboYarpPlugins::yarpNetworkInitializationTimeout)) {
-        yError() << "GazeboYarpFakePointCloud::Load error: yarp network does not seem to be available, is the yarpserver running?";
-        return;
+    // load update period
+    if (_sdf->HasElement("period")) {
+	// set update period
+        m_period = _sdf->Get<double>("period");
+
+	yInfo() << "GazeboYarpFakePointCloud::Load period is"
+		<< m_period;
+    } else {
+	yError() << "GazeboYarpFakePointCloud::Load error:"
+	         << "failure in loading parameter 'period' for model"
+		 << m_model->GetName();
+    }
+
+    // load observer origin
+    if (_sdf->HasElement("observerOrigin")) {
+	ignition::math::Vector3d origin_ign = _sdf->Get<ignition::math::Vector3d>("observerOrigin");
+	
+	yarp::sig::Vector origin(3, 0.0);
+	for (size_t i=0; i<3; i++)
+	    origin[i] = origin_ign[i];
+	
+	// set observer origin within the sampler
+	m_sampler.SetObserverOrigin(origin);
+
+	yInfo() << "GazeboYarpFakePointCloud::Load observer origin is"
+		<< origin.toString();
+    } else {
+	yError() << "GazeboYarpFakePointCloud::Load error:"
+	         << "failure in loading parameter 'observerOrigin' for model"
+		 << m_model->GetName();
+    }
+
+    // load mesh path
+    if (_sdf->HasElement("meshPath")) {
+	std::string mesh_name = _sdf->Get<std::string>("meshPath");
+        std::string mesh_path = gazebo::common::SystemPaths::Instance()->FindFileURI(mesh_name);
+	
+	// load object model within the sampler
+	if (m_sampler.LoadObjectModel(mesh_path)) {
+	    yInfo() << "GazeboYarpFakePointCloud::Load model"
+		    << mesh_path
+		    << "loaded";
+	}
+    } else {
+	yError() << "GazeboYarpFakePointCloud::Load error:"
+	         << "failure in loading parameter 'meshPath' for model"
+		 << m_model->GetName();
     }
 
     // Clear last update time
