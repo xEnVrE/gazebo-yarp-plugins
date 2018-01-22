@@ -34,7 +34,6 @@ namespace gazebo
 	yarp::os::Network m_yarp;
 	
 	gazebo::physics::ModelPtr m_model;
-	gazebo::physics::WorldPtr m_world;	
 	gazebo::event::ConnectionPtr m_worldUpdateConnection;
 	gazebo::common::Time m_lastUpdateTime;
 
