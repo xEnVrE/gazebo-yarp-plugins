@@ -43,6 +43,7 @@ namespace gazebo
 	int m_nPoints;
 
 	void DeliverPointCloud();
+	std::string GetModelName();
     };
 }
 
