@@ -39,7 +39,7 @@ bool FakePointCloudSampler::LoadObjectModel(const std::string &file_path)
     outcome = simpleTriMeshImporter::Open(m_mesh, file_path.c_str());
 
     if(outcome != OFFImportErrors::NoError) {	
-	yError() << "Error while importing .OFF file" << file_path;
+	yError() << "FakePointCloudSampler::LoadObjectModel error: Error while importing .OFF file" << file_path;
 
 	return false;
     }
