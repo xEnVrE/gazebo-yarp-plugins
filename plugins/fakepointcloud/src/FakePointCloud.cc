@@ -87,8 +87,8 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 
     // Store pointer to the model
     m_model = _parent;
-    
-    // load update period
+
+    // Load update period
     if (_sdf->HasElement("period")) {
 	// set update period
         m_period = _sdf->Get<double>("period");
@@ -101,7 +101,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 		 << m_model->GetName();
     }
 
-    // load observer origin
+    // Load observer origin
     if (_sdf->HasElement("observerOrigin")) {
 	ignition::math::Vector3d origin_ign = _sdf->Get<ignition::math::Vector3d>("observerOrigin");
 	
@@ -109,7 +109,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 	for (size_t i=0; i<3; i++)
 	    origin[i] = origin_ign[i];
 	
-	// set observer origin within the sampler
+	// Set observer origin within the sampler
 	m_sampler.SetObserverOrigin(origin);
 
 	yInfo() << "GazeboYarpFakePointCloud::Load observer origin is"
@@ -120,9 +120,9 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 		 << m_model->GetName();
     }
 
-    // load number of points of the point cloud
+    // Load number of points of the point cloud
     if (_sdf->HasElement("numPoints")) {
-	// set number of points
+	// Set number of points
 	m_nPoints = _sdf->Get<int>("numPoints");
 
 	yInfo() << "GazeboYarpFakePointCloud::Load number of points is"
@@ -133,12 +133,12 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 		 << m_model->GetName();
     }
 
-    // load mesh path
+    // Load mesh path
     if (_sdf->HasElement("meshPath")) {
 	std::string mesh_name = _sdf->Get<std::string>("meshPath");
         std::string mesh_path = gazebo::common::SystemPaths::Instance()->FindFileURI(mesh_name);
 	
-	// load object model within the sampler
+	// Load object model within the sampler
 	if (m_sampler.LoadObjectModel(mesh_path)) {
 	    yInfo() << "GazeboYarpFakePointCloud::Load model"
 		    << mesh_path
