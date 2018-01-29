@@ -76,24 +76,6 @@ void GazeboYarpFakePointCloud::DeliverPointCloud()
     m_portOut.write();
 }
 
-std::string GazeboYarpFakePointCloud::GetModelName()
-{
-    // this function evaluates a name for the model
-    // taking into account the fact that it can be nested
-    // within another model
-    
-    // initialize with the name of the model
-    std::string name = m_model->GetName();
-
-    // attach names of all the ancestors
-    for(auto parent = m_model->GetParent(); parent != nullptr; parent = parent->GetParent()) {
-	// add parent name 
-	name = parent->GetName() + "/" + name;
-    }
-    
-    return name;
-}
-
 GazeboYarpFakePointCloud::~GazeboYarpFakePointCloud()
 {
     // close the output port
@@ -113,7 +95,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     m_model = _parent;
 
     // Evaluate a name for the model
-    std::string model_name = GetModelName();
+    std::string model_name = m_model->GetName();
 
     // Open port
     std::string port_name = "/" + model_name + "/fakepointcloud:o";
