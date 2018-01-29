@@ -158,14 +158,30 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     // Load mesh path
     if (_sdf->HasElement("meshPath")) {
 	std::string mesh_name = _sdf->Get<std::string>("meshPath");
+
+	// Check for empty strings
+	if (mesh_name.empty()) {
+	    yError() << "GazeboYarpFakePointCloud::Load error:"
+		     << "parameter 'meshPath' evaluated to an empty string for model name"
+		     << model_name;
+	    return;
+	}
+
+	// Extract path
         std::string mesh_path = gazebo::common::SystemPaths::Instance()->FindFileURI(mesh_name);
 	
 	// Load object model within the sampler
 	if (m_sampler.LoadObjectModel(mesh_path)) {
 	    yInfo() << "GazeboYarpFakePointCloud::Load model"
 		    << mesh_path
-		    << "loaded";
+		    << "loaded for model"
+		    << model_name;
+	} else {
+	    yError() << "GazeboYarpFakePointCloud::Load error:"
+		     << "cannot load mesh for model"
+		     << model_name;
 	}
+	
     } else {
 	yError() << "GazeboYarpFakePointCloud::Load error:"
 	         << "failure in loading parameter 'meshPath' for model"
