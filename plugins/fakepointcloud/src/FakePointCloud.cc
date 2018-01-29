@@ -94,7 +94,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     // Store pointer to the model
     m_model = _parent;
 
-    // Evaluate a name for the model
+    // Get name of the model
     std::string model_name = m_model->GetName();
 
     // Open port
