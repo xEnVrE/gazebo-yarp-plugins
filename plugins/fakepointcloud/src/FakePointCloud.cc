@@ -99,7 +99,13 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 
     // Open port
     std::string port_name = "/" + model_name + "/fakepointcloud:o";
-    m_portOut.open(port_name);
+    bool isPortOpen = m_portOut.open(port_name);
+    if (!isPortOpen) {
+	yError() << "GazeboYarpFakePointCloud::Load error:"
+	         << "cannot open output port for model"
+		 << model_name;
+	return;
+    }
     
     // Load update period
     if (_sdf->HasElement("period")) {
@@ -112,6 +118,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 	yError() << "GazeboYarpFakePointCloud::Load error:"
 	         << "failure in loading parameter 'period' for model"
 		 << model_name;
+	return;
     }
 
     // Load observer origin
@@ -131,6 +138,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 	yError() << "GazeboYarpFakePointCloud::Load error:"
 	         << "failure in loading parameter 'observerOrigin' for model"
 		 << model_name;
+	return;
     }
 
     // Load number of points of the point cloud
@@ -144,6 +152,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 	yError() << "GazeboYarpFakePointCloud::Load error:"
 	         << "failure in loading parameter 'numPoints' for model"
 		 << model_name;
+	return;
     }
 
     // Load mesh path
@@ -161,6 +170,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 	yError() << "GazeboYarpFakePointCloud::Load error:"
 	         << "failure in loading parameter 'meshPath' for model"
 		 << model_name;
+	return;
     }
 
     // Clear last update time
