@@ -70,7 +70,6 @@ namespace gazebo
 	 */
 	gazebo::common::Time m_lastUpdateTime;
 
-	
 	/**
 	 * Instance to the sampler of the fake point cloud
 	 */
@@ -90,12 +89,6 @@ namespace gazebo
 	 * Sample a point cloud and send it to a port
 	 */	
 	void DeliverPointCloud();
-
-	/**
-	 * Evaluate a name for the model taking into account
-	 * its ancestors
-	 */	
-	std::string GetModelName();
     };
 }
 
