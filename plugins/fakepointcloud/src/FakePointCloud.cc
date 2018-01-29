@@ -8,6 +8,12 @@
 #include <gazebo/physics/Model.hh>
 #include <gazebo/common/Events.hh>
 #include <gazebo/physics/World.hh>
+#include <gazebo/physics/Link.hh>
+
+// ignition
+#include <ignition/math/Pose3.hh>
+#include <ignition/math/Vector3.hh>
+#include <ignition/math/Quaternion.hh>
 
 // GazeboYarpPlugins
 #include <GazeboYarpPlugins/common.h>
@@ -33,21 +39,32 @@ namespace gazebo {
 
 void GazeboYarpFakePointCloud::DeliverPointCloud()
 {
-    // Get the current pose of the object
-    gazebo::math::Pose cur_pose = m_model->GetWorldPose();
+    // Get the current pose of the canonical link of the model
+#if GAZEBO_MAJOR_VERSION >= 8
+    ignition::math::Pose3d curPose = m_model->GetLink()->WorldPose();
+#else
+    gazebo::math::Pose curPoseGazebo = m_model->GetLink()->GetWorldPose();
+    // Convert to Ignition so that the same interface
+    // can be used in the rest of the function
+    ignition::math::Pose3d curPose = curPoseGazebo.Ign();
+#endif
 
+    // Get the positional and rotational parts
+    ignition::math::Vector3d pos = curPose.Pos();
+    ignition::math::Quaterniond rot = curPose.Rot();
+    
     // Fill yarp-like quantities
     yarp::sig::Vector position;
     yarp::math::Quaternion attitude;
 	
-    position.push_back(cur_pose.pos.x);
-    position.push_back(cur_pose.pos.y);
-    position.push_back(cur_pose.pos.z);
+    position.push_back(pos.X());
+    position.push_back(pos.Y());
+    position.push_back(pos.Z());
 
-    attitude = yarp::math::Quaternion(cur_pose.rot.x,
-				      cur_pose.rot.y,
-				      cur_pose.rot.z,
-				      cur_pose.rot.w);
+    attitude = yarp::math::Quaternion(rot.X(),
+				      rot.Y(),
+				      rot.Z(),
+				      rot.W());
     // Set current pose
     m_sampler.SetPose(position, attitude);
     
