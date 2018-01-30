@@ -147,7 +147,11 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
 					   poiss_params);
     vcg::tri::UpdateBounding<simpleTriMesh>::Box(poiss_mesh);
 
-    // store up to n_points vertices in the cloud
+
+    // clear the cloud
+    cloud.clear();
+
+    // store up to n_points vertices in the cloud	
     for (VertexIterator vi = poiss_mesh.vert.begin();
 	 cloud.size() < n_points && vi != poiss_mesh.vert.end();
 	 vi++)
