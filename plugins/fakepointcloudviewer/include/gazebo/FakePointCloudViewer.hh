@@ -20,7 +20,6 @@
 
 // std
 #include <string>
-#include <vector>
 
 #include "PointCloud.h"
 
