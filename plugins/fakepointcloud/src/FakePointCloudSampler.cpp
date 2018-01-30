@@ -179,8 +179,8 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
 	                    yarp::math::norm(diff) /
 	                    yarp::math::norm(normal));
 	
-	// take the point if the angle is greater than 90 degrees
-	if(angle > M_PI/2.0) {
+	// take the point if the angle is greater than 100 degrees
+	if(angle > 100 * (M_PI/180.0)) {
 	    PointCloudItem item;
 	    
 	    item.x = point[0];
