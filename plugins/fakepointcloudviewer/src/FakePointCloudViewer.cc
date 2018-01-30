@@ -160,26 +160,30 @@ void FakePointCloudViewer::OnRenderUpdate()
 				   rot.w(), rot.x(), rot.y(), rot.z());
 
     // Update the dynamic lines
-    for (size_t i=0; i<m_line->GetPointCount() && i<pc->size(); i++) {
-    	// Extract point
-    	PointCloudItem pcItem = (*pc)[i];
+    ignition::math::Vector3d diff = ignition::math::Vector3d::Zero;    
+    for (size_t i=0; i<m_line->GetPointCount(); i++) {
 
-    	// Convert to a ignition::math::Pose3d with no rotation
-    	ignition::math::Pose3d point(pcItem.x, pcItem.y, pcItem.z,
-    				     0, 0, 0);
+	if (i<pc->size()) {
+	    // Extract point
+	    PointCloudItem pcItem = (*pc)[i];
 
-    	// Evaluate the pose from the origin of the visual to the point
-    	// expressed in the local visual frame
-    	ignition::math::Pose3d diff_pose = point - absPose;
+	    // Convert to a ignition::math::Pose3d with no rotation
+	    ignition::math::Pose3d point(pcItem.x, pcItem.y, pcItem.z,
+					 0, 0, 0);
 
-	// Make the vector a bit longer so that it is visible outside
-	// the mesh
-	// TODO: find a more elegant solution for this
-	ignition::math::Vector3d diff = diff_pose.Pos();
-	diff += diff / diff.Length() * 0.002;
+	    // Evaluate the pose from the origin of the visual to the point
+	    // expressed in the local visual frame
+	    ignition::math::Pose3d diff_pose = point - absPose;
 
-    	// Assign the (2*i + 1)-th point of the line
-    	m_line->SetPoint(2*i + 1, diff);
+	    // Make the vector a bit longer so that it is visible outside
+	    // the mesh
+	    // TODO: find a more elegant solution for this
+	    diff = diff_pose.Pos();
+	    diff += diff / diff.Length() * 0.002;
+
+	}
+	// Assign the (2*i + 1)-th point of the line
+	m_line->SetPoint(2*i + 1, diff);
     }
 }
 
