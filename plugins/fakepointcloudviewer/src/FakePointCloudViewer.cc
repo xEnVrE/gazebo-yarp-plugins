@@ -34,8 +34,11 @@ namespace gazebo {
 
 FakePointCloudViewer::~FakePointCloudViewer()
 {
-    return;
+    // close the port
     m_pointCloudPort.close();
+
+    // close the driver
+    m_drvTransformClient.close();
 }
 
 void FakePointCloudViewer::Load(gazebo::rendering::VisualPtr _parent, sdf::ElementPtr _sdf)
