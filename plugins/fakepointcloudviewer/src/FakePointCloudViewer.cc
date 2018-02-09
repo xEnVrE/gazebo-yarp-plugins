@@ -180,7 +180,10 @@ void FakePointCloudViewer::OnRenderUpdate()
 
 	    // Make the vector a bit longer so that it is visible outside
 	    // the mesh
-	    // TODO: find a more elegant solution for this
+	    // NOTE: for a better looking representation consider using
+	    // plugin FakePointCloud that now is handling visualization
+	    // in Gazebo >= 8.0  using visualization markers
+	    //
 	    diff = diff_pose.Pos();
 	    diff += diff / diff.Length() * 0.002;
 
