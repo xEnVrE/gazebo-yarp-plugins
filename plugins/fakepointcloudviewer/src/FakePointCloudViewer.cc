@@ -117,7 +117,11 @@ void FakePointCloudViewer::Load(gazebo::rendering::VisualPtr _parent, sdf::Eleme
 std::string FakePointCloudViewer::GetModelName()
 {
     // Get the name of the visual element
+#if GAZEBO_MAJOR_VERSION >= 8    
+    std::string visual_name = m_visual->Name();
+#else
     std::string visual_name = m_visual->GetName();
+#endif
 
     // The name provided by Gazebo is of the form
     // model_name::link_name::visual_name
