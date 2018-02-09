@@ -37,7 +37,7 @@ GZ_REGISTER_MODEL_PLUGIN(gazebo::GazeboYarpFakePointCloud)
 
 namespace gazebo {
 
-void GazeboYarpFakePointCloud::DeliverPointCloud()
+void GazeboYarpFakePointCloud::SamplePointCloud(PointCloud &pc)
 {
     // Get the current pose of the canonical link of the model
 #if GAZEBO_MAJOR_VERSION >= 8
@@ -69,11 +69,7 @@ void GazeboYarpFakePointCloud::DeliverPointCloud()
     m_sampler.SetPose(position, attitude);
     
     // Sample the point cloud
-    PointCloud &cloud = m_portOut.prepare();    
-    m_sampler.SamplePointCloud(m_nPoints, cloud);
-
-    // Deliver the point cloud
-    m_portOut.write();
+    m_sampler.SamplePointCloud(m_nPoints, pc);
 }
 
 GazeboYarpFakePointCloud::~GazeboYarpFakePointCloud()
@@ -189,8 +185,29 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 	return;
     }
 
+    // Load showPointCloud flag
+    if (_sdf->HasElement("showPointCloud"))
+	m_showPointCloud = _sdf->Get<bool>("showPointCloud");
+    else
+	// default to false
+	m_showPointCloud = false;
+
     // Clear last update time
     m_lastUpdateTime = gazebo::common::Time(0.0);
+
+    // Set the default colour of the visualization markers
+    // TODO: take from SDF configuration
+    if (m_showPointCloud)
+#if GAZEBO_MAJOR_VERSION >= 8
+	m_viewer.setDefaultColour("Gazebo/RedTransparent");
+#else
+    yWarning() << "GazeboYarpFakePointCloud::Load warning:"
+	       << "showPointCloud option requires minimum"
+	       << "version 8 of Gazebo (model)"
+	       << model_name;
+#endif
+	
+
 
     // Listen to the update event
     auto worldUpdateBind = boost::bind(&GazeboYarpFakePointCloud::OnWorldUpdate, this);
@@ -212,8 +229,24 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
 	// Store current time for next update
 	m_lastUpdateTime = currentTime;
 
-	// Deliver point cloud
-	DeliverPointCloud();
+	// Sample point cloud
+	PointCloud &cloud = m_portOut.prepare();
+	SamplePointCloud(cloud);
+
+	// Deliver the point cloud
+	m_portOut.write();
+
+	// Update visualization markers
+	std::vector<ignition::math::Vector3d> cloud_ign;
+	for (size_t i=0; i<cloud.size(); i++)
+	{
+	    ignition::math::Vector3d point(cloud[i].x,
+					   cloud[i].y,
+					   cloud[i].z);					   
+	    cloud_ign.push_back(point);
+	}
+	m_viewer.showPointCloud(cloud_ign);
+	
     }
 }
     
