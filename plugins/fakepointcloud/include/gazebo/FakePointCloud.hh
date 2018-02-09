@@ -17,6 +17,12 @@
 //
 #include "FakePointCloudSampler.h"
 
+// PointCloudViewer only supported in
+// Gazebo >= 8
+#if GAZEBO_MAJOR_VERSION >= 8
+#include "PointCloudViewer.h"
+#endif
+
 namespace gazebo
 {
     /// \class GazeboFakePointCloud
@@ -39,7 +45,8 @@ namespace gazebo
 
 	/**
 	 * Check if a period is elapsed since last update 
-	 * and in case calls the method DeliverPointCloud
+	 * and in case sample a new point cloud, send it over 
+	 * the output port and update the visualization markers.
 	 */	
 	void OnWorldUpdate();
 	
@@ -74,21 +81,33 @@ namespace gazebo
 	 * Instance to the sampler of the fake point cloud
 	 */
 	FakePointCloudSampler m_sampler;
-	
+
+	/**
+	 * Instance to the viewer of the fake point cloud
+	 */
+#if GAZEBO_MAJOR_VERSION >= 8	
+	PointCloudViewer m_viewer;
+#endif	
 	/**
 	 * Update period of the plugin
 	 */
 	double m_period;
 
 	/**
-	 * Numeber of points of the point cloud
+	 * Number of points of the point cloud
 	 */	
 	int m_nPoints;
 
 	/**
+	 * Whether to show the point cloud in gazebo 
+	 * using visual markers or not
+	 */	
+	bool m_showPointCloud;
+	
+	/**
 	 * Sample a point cloud and send it to a port
 	 */	
-	void DeliverPointCloud();
+	void SamplePointCloud(PointCloud&);
     };
 }
 
