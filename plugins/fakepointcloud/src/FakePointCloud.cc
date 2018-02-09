@@ -236,17 +236,22 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
 	// Deliver the point cloud
 	m_portOut.write();
 
-	// Update visualization markers
-	std::vector<ignition::math::Vector3d> cloud_ign;
-	for (size_t i=0; i<cloud.size(); i++)
+
+#if GAZEBO_MAJOR_VERSION >= 8
+	// Update visualization markers if required	
+	if (m_showPointCloud)
 	{
-	    ignition::math::Vector3d point(cloud[i].x,
-					   cloud[i].y,
-					   cloud[i].z);					   
-	    cloud_ign.push_back(point);
+	    std::vector<ignition::math::Vector3d> cloud_ign;
+	    for (size_t i=0; i<cloud.size(); i++)
+	    {
+		ignition::math::Vector3d point(cloud[i].x,
+					       cloud[i].y,
+					       cloud[i].z);					   
+		cloud_ign.push_back(point);
+	    }
+	    m_viewer.showPointCloud(cloud_ign);
 	}
-	m_viewer.showPointCloud(cloud_ign);
-	
+#endif
     }
 }
     
