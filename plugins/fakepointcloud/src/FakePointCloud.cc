@@ -91,15 +91,15 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     m_model = _parent;
 
     // Get name of the model
-    std::string model_name = m_model->GetName();
+    std::string m_modelName = m_model->GetName();
 
     // Open port
-    std::string port_name = "/" + model_name + "/fakepointcloud:o";
+    std::string port_name = "/" + m_modelName + "/fakepointcloud:o";
     bool isPortOpen = m_portOut.open(port_name);
     if (!isPortOpen) {
 	yError() << "GazeboYarpFakePointCloud::Load error:"
 	         << "cannot open output port for model"
-		 << model_name;
+		 << m_modelName;
 	return;
     }
     
@@ -113,7 +113,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     } else {
 	yError() << "GazeboYarpFakePointCloud::Load error:"
 	         << "failure in loading parameter 'period' for model"
-		 << model_name;
+		 << m_modelName;
 	return;
     }
 
@@ -133,7 +133,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     } else {
 	yError() << "GazeboYarpFakePointCloud::Load error:"
 	         << "failure in loading parameter 'observerOrigin' for model"
-		 << model_name;
+		 << m_modelName;
 	return;
     }
 
@@ -147,7 +147,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     } else {
 	yError() << "GazeboYarpFakePointCloud::Load error:"
 	         << "failure in loading parameter 'numPoints' for model"
-		 << model_name;
+		 << m_modelName;
 	return;
     }
 
@@ -159,7 +159,7 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 	if (mesh_name.empty()) {
 	    yError() << "GazeboYarpFakePointCloud::Load error:"
 		     << "parameter 'meshPath' evaluated to an empty string for model name"
-		     << model_name;
+		     << m_modelName;
 	    return;
 	}
 
@@ -171,17 +171,17 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
 	    yInfo() << "GazeboYarpFakePointCloud::Load model"
 		    << mesh_path
 		    << "loaded for model"
-		    << model_name;
+		    << m_modelName;
 	} else {
 	    yError() << "GazeboYarpFakePointCloud::Load error:"
 		     << "cannot load mesh for model"
-		     << model_name;
+		     << m_modelName;
 	}
 	
     } else {
 	yError() << "GazeboYarpFakePointCloud::Load error:"
 	         << "failure in loading parameter 'meshPath' for model"
-		 << model_name;
+		 << m_modelName;
 	return;
     }
 
@@ -199,12 +199,18 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     // TODO: take from SDF configuration
     if (m_showPointCloud)
 #if GAZEBO_MAJOR_VERSION >= 8
+    {	
+	// Set default colour
 	m_viewer.setDefaultColour("Gazebo/RedTransparent");
+
+	// Set the namespace
+	m_viewer.setNamespace(m_modelName);
+    }
 #else
     yWarning() << "GazeboYarpFakePointCloud::Load warning:"
 	       << "showPointCloud option requires minimum"
 	       << "version 8 of Gazebo (model)"
-	       << model_name;
+	       << m_modelName;
 #endif
 	
 
@@ -249,7 +255,13 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
 					       cloud[i].z);					   
 		cloud_ign.push_back(point);
 	    }
-	    m_viewer.showPointCloud(cloud_ign);
+	    if(!m_viewer.showPointCloud(cloud_ign)) {
+
+		yError() << "GazeboYarpFakePointCloud::OnWorldUpdate error:"
+			 << "failure in point cloud visualization for model"
+			 << m_modelName;
+	    }
+		
 	}
 #endif
     }
