@@ -32,6 +32,8 @@ namespace gazebo {
 
 EstimateViewer::~EstimateViewer()
 {
+    // Close the driver
+    m_drvTransformClient.close();
 }
 
 void EstimateViewer::Load(gazebo::rendering::VisualPtr _parent, sdf::ElementPtr _sdf)
