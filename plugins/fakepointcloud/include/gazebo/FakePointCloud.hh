@@ -103,6 +103,11 @@ namespace gazebo
 	 * using visual markers or not
 	 */	
 	bool m_showPointCloud;
+
+	/**
+	 * Model name
+	 */	
+	bool m_modelName;
 	
 	/**
 	 * Sample a point cloud and send it to a port
