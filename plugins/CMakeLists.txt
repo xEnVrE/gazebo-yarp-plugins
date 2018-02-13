@@ -43,3 +43,5 @@ add_subdirectory(contactloadcellarray)
 add_subdirectory(modelposepublisher)
 add_subdirectory(basestate)
 add_subdirectory(configurationoverride)
+add_subdirectory(skin)
+
