@@ -87,12 +87,22 @@ namespace gazebo
 	/**
 	 * Driver required to access the IEncoder interface
 	 */
-	yarp::dev::PolyDriver m_drvArmEnc;
+	yarp::dev::PolyDriver m_drvEncArm;
+
+	/**
+	 * Driver required to access the IEncoder interface
+	 */
+	yarp::dev::PolyDriver m_drvEncTorso;
 
 	/**
 	 * Pointer to the Encoders view
 	 */
-	yarp::dev::IEncoders *m_iEnc;
+	yarp::dev::IEncoders *m_iEncArm;
+
+	/**
+	 * Pointer to the Encoders view
+	 */
+	yarp::dev::IEncoders *m_iEncTorso;
 
 	/**
 	 * Driver required to access the IFrameTransform interface
@@ -103,6 +113,17 @@ namespace gazebo
 	 * Pointer to the IFrameTransform view
 	 */
 	yarp::dev::IFrameTransform *m_tfClient;
+
+	/**
+	 * Indicates whether the transform from /inertial
+	 * to the robot root frame has been received
+	 */
+	bool m_robotRootFrameReceived;
+
+	/**
+	 * Robot arm chain
+	 */
+	iCub::iKin::iCubArm m_arm;
 
 	/**
 	 * Pointer to the model where the plugin is inserted
