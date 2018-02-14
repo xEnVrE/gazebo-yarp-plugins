@@ -14,10 +14,15 @@
 #include <yarp/os/Network.h>
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/Property.h>
+#include <yarp/dev/PolyDriver.h>
+#include <yarp/dev/ControlBoardInterfaces.h>
+#include <yarp/dev/IFrameTransform.h>
+#include <yarp/dev/IEncoders.h>
 
 // icub-main
 #include <iCub/skinDynLib/common.h>
 #include <iCub/skinDynLib/skinContactList.h>
+#include <iCub/iKin/iKinFwd.h>
 
 // std
 #include <string>
@@ -80,7 +85,27 @@ namespace gazebo
 	yarp::os::Property m_parameters;
 
 	/**
-	 * pointer to the model where the plugin is inserted
+	 * Driver required to access the IEncoder interface
+	 */
+	yarp::dev::PolyDriver m_drvArmEnc;
+
+	/**
+	 * Pointer to the Encoders view
+	 */
+	yarp::dev::IEncoders *m_iEnc;
+
+	/**
+	 * Driver required to access the IFrameTransform interface
+	 */
+	yarp::dev::PolyDriver m_drvTransformClient;
+
+	/**
+	 * Pointer to the IFrameTransform view
+	 */
+	yarp::dev::IFrameTransform *m_tfClient;
+
+	/**
+	 * Pointer to the model where the plugin is inserted
 	 */
 	gazebo::physics::ModelPtr m_model;
 
@@ -88,6 +113,11 @@ namespace gazebo
 	 * Connection to the World update event of Gazebo
 	 */
 	gazebo::event::ConnectionPtr m_worldUpdateConnection;
+
+	/**	
+	 * Transformation from inertial to the root link of the robot
+	 */
+	ignition::math::Pose3d m_inertialToRobot;
 
 	/**
 	 * List of ContactSensor(s)
@@ -103,6 +133,12 @@ namespace gazebo
 	 * String indicating which hand is considered, left or right
 	 */
 	std::string m_whichHand;
+
+	/*
+	 * Retrieve the pose of the robot root frame that is published
+	 * in the FrameTransformServer.
+	 */
+	bool RetrieveRobotRootFrame(ignition::math::Pose3d &pose);
 
 	/**
 	 * Retrieve a links given their local, i.e. not scoped, names.
@@ -121,6 +157,11 @@ namespace gazebo
 	 * listed in the .ini configuration file.
 	 */	
 	bool ConfigureAllContactSensors();
+
+	/*
+	 * Retrieve the pose of the frame attached to the hand of the robot.
+	 */
+	bool RetrieveHandPose(ignition::math::Pose3d &pose);
 	
 	/**
 	 *
