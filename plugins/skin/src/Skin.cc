@@ -17,10 +17,13 @@
 
 // GazeboYarpPlugins
 #include <GazeboYarpPlugins/common.h>
+#include <GazeboYarpPlugins/ConfHelpers.hh>
 
 // yarp
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
+#include <yarp/os/Value.h>
+#include <yarp/os/Searchable.h>
 
 // icub-main
 #include <iCub/skinDynLib/skinContact.h>
@@ -40,10 +43,17 @@ namespace gazebo {
 
 GazeboYarpSkin::~GazeboYarpSkin()
 {
+    // Close the port
+    m_portSkin.close();
+    
+    // Close the driver
 }
 
 void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
+    // Store pointer to the model
+    m_model = _parent;
+    
     // Check yarp network availability
     if (!m_yarp.checkNetwork(GazeboYarpPlugins::yarpNetworkInitializationTimeout)) {
         yError() << "GazeboYarpSkin::Load error:"
@@ -51,98 +61,83 @@ void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
         return;
     }
 
-    // Store pointer to the model
-    m_model = _parent;
+    // Get .ini configuration file from plugin sdf
+    bool ok = GazeboYarpPlugins::loadConfigModelPlugin(_parent, _sdf, m_parameters);
+    if (!ok) {
+        yError() << "GazeboYarpSkin::Load error:"
+		 << "error loading .ini configuration from plugin SDF";
+        return;
+    }
 
-    // TODO: extract robot name from configuation
-    std::string robotName = "iCub";
-
-    // Load all the contact sensors attached to finger tips
-    if (!loadRightFingerTips(robotName) || !loadLeftFingerTips(robotName))
+    // Get hand type
+    yarp::os::Value &whichHandValue = m_parameters.find("whichHand");
+    if (whichHandValue.isNull()) {
+        yError() << "GazeboYarpSkin::ConfigureAllContactSensors error:"
+		 << "configuration parameter 'whichHand' not found.";
+        return;
+    }
+    m_whichHand = whichHandValue.asString();
+    
+    // Configure all the contact sensors
+    ok = ConfigureAllContactSensors();
+    if (!ok) {
 	return;
+    }
 
     // Open skin port
-    m_portSkin.open("/skinManager/skin_events:o");
-
+    ok = m_portSkin.open("/" + m_whichHand + "_hand/skinManager/skin_events:o");
+    if (!ok)  {
+        yError() << "GazeboYarpSkin::Load error:"
+		 << "cannot open port /skinManager/skin_events:o";
+        return;
+    }
+	
     // listen to the update event
     auto worldUpdateBind = boost::bind(&GazeboYarpSkin::OnWorldUpdate, this);
     m_worldUpdateConnection = gazebo::event::Events::ConnectWorldUpdateBegin(worldUpdateBind);
 }
 
-bool GazeboYarpSkin::loadRightFingerTips(const std::string &robotName)    
+bool GazeboYarpSkin::RetrieveLinksFromLocalNames(const std::vector<std::string> &linksLocalNames,
+						 linksMap &map)
 {
-    // TODO: get these from configuration file
-    std::vector<std::string> rightFingerTipsLinkNames;
-    rightFingerTipsLinkNames.push_back("r_tl4");
-    rightFingerTipsLinkNames.push_back("r_ail3");
-    rightFingerTipsLinkNames.push_back("r_ml3");
-    rightFingerTipsLinkNames.push_back("r_ril3");
-    rightFingerTipsLinkNames.push_back("r_lil3");
+    // Get all the links within the robot
+    const gazebo::physics::Link_V &links = m_model->GetLinks();
     
-    // Load all the contact sensors
-    bool ok;
-    for (size_t i=0; i<rightFingerTipsLinkNames.size(); i++)
+    // Search for the given links
+    // Lots of redundancy here, room for improvements...
+    //
+    for (size_t i=0; i<links.size(); i++)
     {
-	std::string linkName = rightFingerTipsLinkNames[i];
-	ok = loadGazeboContactSensor(robotName + "::r_hand::" + linkName,
-				     iCub::skinDynLib::BodyPart::RIGHT_ARM,
-				     linkNumberEnum::HAND,
-				     iCub::skinDynLib::SkinPart::SKIN_RIGHT_HAND);
-	if (!ok) {
-	    yError() << "GazeboYarpSkin::Load error:"
-		     << "cannot load contact sensor attached to link"
-		     << linkName;
-	    return false;	
+	// Get the scoped name of the current link
+	std::string currentLinkScopedName = links[i]->GetScopedName();
+	
+	for (size_t j=0; j<linksLocalNames.size(); j++)
+	{
+	    // Check if the ending of the name of the current link corresponds to
+	    // that of one of the given links
+	    std::string linkNameScopedEnding = "::" + linksLocalNames[j];
+	    if (GazeboYarpPlugins::hasEnding(currentLinkScopedName, linkNameScopedEnding))
+	    {
+		// Store the link into the map
+		map[linksLocalNames[j]] = links[i];
+
+		break;
+	    }
 	}
     }
+
+    // Return false if not all the links were found
+    if (map.size() != linksLocalNames.size())
+	return false;
 
     return true;
 }
 
-bool GazeboYarpSkin::loadLeftFingerTips(const std::string &robotName)
+bool GazeboYarpSkin::ConfigureGazeboContactSensor(const std::string &linkLocalName,
+						  ContactSensor &sensor)
 {
-    // TODO: get these from configuration file
-    std::vector<std::string> leftFingerTipsLinkNames;
-    leftFingerTipsLinkNames.push_back("l_tl4");
-    leftFingerTipsLinkNames.push_back("l_ail3");
-    leftFingerTipsLinkNames.push_back("l_ml3");
-    leftFingerTipsLinkNames.push_back("l_ril3");
-    leftFingerTipsLinkNames.push_back("l_lil3");
-    
-    // Load all the contact sensors
-    bool ok;
-    for (size_t i=0; i<leftFingerTipsLinkNames.size(); i++)
-    {
-	std::string linkName = leftFingerTipsLinkNames[i];
-	ok = loadGazeboContactSensor(robotName + "::l_hand::" + linkName,
-				     iCub::skinDynLib::BodyPart::LEFT_ARM,
-				     linkNumberEnum::HAND,
-				     iCub::skinDynLib::SkinPart::SKIN_LEFT_HAND);
-	if (!ok) {
-	    yError() << "GazeboYarpSkin::Load error:"
-		     << "cannot load contact sensor attached to link"
-		     << linkName;
-	    return false;	
-	}
-    }
-
-    return true;
-}    
-
-bool GazeboYarpSkin::loadGazeboContactSensor(const std::string &linkName,
-				     const iCub::skinDynLib::BodyPart &bodyPart,
-				     const linkNumberEnum &linkNumber,
-				     const iCub::skinDynLib::SkinPart &skinPart)
-{
-    ContactSensor sensor;
-
-    // Copy skinManager info
-    sensor.bodyPart = bodyPart;
-    sensor.linkNumber = linkNumber;
-    sensor.skinPart = skinPart;
-
     // Retrieve the link
-    sensor.parentLink = m_model->GetLink(linkName);
+    sensor.parentLink = m_linksMap[linkLocalName];
     if (sensor.parentLink == NULL)
 	return false;
     
@@ -197,8 +192,66 @@ bool GazeboYarpSkin::loadGazeboContactSensor(const std::string &linkName,
     // Activate sensor
     sensor.sensor->SetActive(true);
 
-    // Add sensor to the list
-    m_contactSensors.push_back(sensor);
+    return true;
+}
+
+bool GazeboYarpSkin::ConfigureAllContactSensors()
+{
+    // Configure skinManager parameters
+    iCub::skinDynLib::BodyPart bodyPart;
+    iCub::skinDynLib::SkinPart skinPart;
+    linkNumberEnum linkNumber = linkNumberEnum::HAND;
+    if (m_whichHand == "right")
+    {
+	bodyPart = iCub::skinDynLib::BodyPart::RIGHT_ARM;
+	skinPart = iCub::skinDynLib::SkinPart::SKIN_RIGHT_HAND;
+    }
+    else
+    {
+	bodyPart = iCub::skinDynLib::BodyPart::LEFT_ARM;
+	skinPart = iCub::skinDynLib::SkinPart::SKIN_LEFT_HAND;
+    }
+    
+    // Get local link names of the finger tips
+    yarp::os::Bottle linksLocalNamesBottle = m_parameters.findGroup("linkNames");
+    std::vector<std::string> linksLocalNames;
+    if (linksLocalNamesBottle.isNull()) {
+        yError() << "GazeboYarpSkin::ConfigureAllContactSensors error:"
+		 << "configuration parameter 'linkNames' not found.";
+        return false;
+    }
+    int numberOfLinks = linksLocalNamesBottle.size()-1;
+    for (size_t i=0; i<numberOfLinks; i++)
+	linksLocalNames.push_back(linksLocalNamesBottle.get(i+1).asString().c_str());
+
+    // Retrieve the links from the model
+    RetrieveLinksFromLocalNames(linksLocalNames, m_linksMap);
+
+    // Configure contact sensors
+    std::string linkLocalName;
+    bool ok;
+    for (size_t i=0; i<numberOfLinks; i++)
+    {
+	ContactSensor sensor;
+
+	// Copy skinManager parameters
+	sensor.bodyPart = bodyPart;
+	sensor.linkNumber = linkNumber;
+	sensor.skinPart = skinPart;
+
+	// Configure Gazebo contact sensor
+	linkLocalName = linksLocalNames[i];
+	ok = ConfigureGazeboContactSensor(linkLocalName, sensor);
+	if (!ok) {
+	    yError() << "GazeboYarpSkin::ConfigureAllContactSensors error:"
+		     << "cannot configure link"
+		     << linkLocalName;
+	    return false;
+	}
+
+	// Add sensor to the list
+	m_contactSensors.push_back(sensor);
+    }
 
     return true;
 }
@@ -239,7 +292,6 @@ void GazeboYarpSkin::OnWorldUpdate()
 	yInfo() << "*****************************************";
 	yInfo() << "";
     }
-
 }
 
 }
