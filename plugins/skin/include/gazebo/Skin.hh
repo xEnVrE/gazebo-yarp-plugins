@@ -13,6 +13,7 @@
 // yarp
 #include <yarp/os/Network.h>
 #include <yarp/os/BufferedPort.h>
+#include <yarp/os/Property.h>
 
 // icub-main
 #include <iCub/skinDynLib/common.h>
@@ -20,19 +21,22 @@
 
 // std
 #include <string>
+#include <unordered_map>
 
-enum class bodyPartEnum;
+typedef std::unordered_map<std::string, gazebo::physics::LinkPtr> linksMap;
+
 enum class linkNumberEnum;
-enum class skinPartEnum;
 
 struct ContactSensor
 {
+    // Some of these may be useful for future implementations
+    // of the Skin plugin
     std::string sensorName;
     std::string collisionName;
     gazebo::physics::LinkPtr parentLink;
     gazebo::sensors::ContactSensorPtr sensor;
 
-    // Useful information to reconstrct
+    // Required to reconstrct
     // the output of the skinManager
     iCub::skinDynLib::BodyPart bodyPart;
     linkNumberEnum linkNumber;
@@ -71,6 +75,11 @@ namespace gazebo
 	yarp::os::BufferedPort<iCub::skinDynLib::skinContactList> m_portSkin;
 
 	/**
+	 * Parameters of the plugin
+	 */
+	yarp::os::Property m_parameters;
+
+	/**
 	 * pointer to the model where the plugin is inserted
 	 */
 	gazebo::physics::ModelPtr m_model;
@@ -84,27 +93,35 @@ namespace gazebo
 	 * List of ContactSensor(s)
 	 */
 	std::vector<ContactSensor> m_contactSensors;
+	
+	/**
+	 * Map between links local names and gazebo::physics::LinkPtr(s)
+	 */
+	std::unordered_map<std::string, gazebo::physics::LinkPtr> m_linksMap;
 
 	/**
-	 * Load all the contact sensors attached to the finger tips of
-	 * the right hand.
-	 */	
-	bool loadRightFingerTips(const std::string &robotName);
+	 * String indicating which hand is considered, left or right
+	 */
+	std::string m_whichHand;
 
 	/**
-	 * Load all the contact sensors attached to the finger tips of
-	 * the left hand.
-	 */	
-	bool loadLeftFingerTips(const std::string &robotName);
-
+	 * Retrieve a links given their local, i.e. not scoped, names.
+	 * A local name is supposed to be unique within the model.
+	 */
+	bool RetrieveLinksFromLocalNames(const std::vector<std::string> &linksLocalNames,
+					 linksMap &map);
 	/**
-	 * Load the gazebo contact sensor corresponding to the link
-	 * with name linkName. One contact sensor per link is assumed.
+	 * Configure the gazebo contact sensor corresponding to the link
+	 * with local name linkLocalName.
 	 */	
-	bool loadGazeboContactSensor(const std::string &linkName,
-				     const iCub::skinDynLib::BodyPart &bodyPart,
-				     const linkNumberEnum &linkNumber,
-				     const iCub::skinDynLib::SkinPart &skinPart);
+	bool ConfigureGazeboContactSensor(const std::string &linkLocalName,
+					  ContactSensor &sensor);
+	/**
+	 * Configure all the contacts sensors attached to the links
+	 * listed in the .ini configuration file.
+	 */	
+	bool ConfigureAllContactSensors();
+	
 	/**
 	 *
 	 */	
