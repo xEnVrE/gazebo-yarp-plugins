@@ -463,7 +463,6 @@ void GazeboYarpSkin::OnWorldUpdate()
 		// to the contact point expressed in the frame attached to the
 		// palm of the hand (as done in the skinManager)
 		ignition::math::Pose3d diff = point - inertialToHand;
-
 		
 		// One skinContact for each position is considered
 		// TODO: averaging may be an idea
@@ -476,10 +475,11 @@ void GazeboYarpSkin::OnWorldUpdate()
 		diffVector[1] = diffPos.Y();
 		diffVector[2] = diffPos.Z();		
 		iCub::skinDynLib::dynContact dynContact(sensor.bodyPart,
-						     static_cast<int>(sensor.linkNumber),
-						     diffVector);
+							static_cast<int>(sensor.linkNumber),
+							yarp::sig::Vector(3,0.0));
 		iCub::skinDynLib::skinContact skinContact(dynContact);
 		skinContact.setSkinPart(sensor.skinPart);
+		skinContact.setGeoCenter(diffVector);
 
 		// Add contact to the list
 		skinContactList.push_back(skinContact);
