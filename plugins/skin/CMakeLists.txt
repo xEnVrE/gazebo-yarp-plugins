@@ -14,7 +14,7 @@ if(CMAKE_VERSION VERSION_LESS 3.0.0)
     unset(LIB_COMMON_NAME)
 endif()
 
-# required for iCub::skinDynLib
+# required for iCub-main libraries
 find_package(ICUB)
 list(APPEND CMAKE_MODULE_PATH ${ICUB_MODULE_PATH})
 
