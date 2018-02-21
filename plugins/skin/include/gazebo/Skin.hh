@@ -46,6 +46,13 @@ struct ContactSensor
     iCub::skinDynLib::BodyPart bodyPart;
     linkNumberEnum linkNumber;
     iCub::skinDynLib::SkinPart skinPart;
+
+    // In this simplificative simulation
+    // each contact is associated with
+    // one taxel only. Taxels IDs are used
+    // to distinguish which finger tip was
+    // involved in the contact.
+    unsigned int taxelId;
 };
 
 enum class linkNumberEnum {
