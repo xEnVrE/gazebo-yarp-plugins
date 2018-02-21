@@ -323,6 +323,17 @@ bool GazeboYarpSkin::ConfigureAllContactSensors()
     for (size_t i=0; i<numberOfLinks; i++)
 	linksLocalNames.push_back(linksLocalNamesBottle.get(i+1).asString().c_str());
 
+    // Get taxel ids associated to each collision
+    yarp::os::Bottle taxelIdsBottle = m_parameters.findGroup("taxelIds");
+    std::vector<unsigned int> taxelIds;
+    if (taxelIdsBottle.isNull()) {
+        yError() << "GazeboYarpSkin::ConfigureAllContactSensors error:"
+		 << "configuration parameter 'taxelIds' not found.";
+        return false;
+    }
+    for (size_t i=0; i<numberOfLinks; i++)
+	taxelIds.push_back(taxelIdsBottle.get(i+1).asInt());
+
     // Retrieve the links from the model
     RetrieveLinksFromLocalNames(linksLocalNames, m_linksMap);
 
@@ -337,6 +348,7 @@ bool GazeboYarpSkin::ConfigureAllContactSensors()
 	sensor.bodyPart = bodyPart;
 	sensor.linkNumber = linkNumber;
 	sensor.skinPart = skinPart;
+	sensor.taxelId = taxelIds[i];
 
 	// Configure Gazebo contact sensor
 	linkLocalName = linksLocalNames[i];
@@ -438,7 +450,7 @@ void GazeboYarpSkin::OnWorldUpdate()
     // Process contacts for each contact sensor
     iCub::skinDynLib::skinContactList &skinContactList = m_portSkin.prepare();
     skinContactList.clear();
-    
+
     for (size_t i=0; i<m_contactSensors.size(); i++)
     {
 	ContactSensor &sensor = m_contactSensors[i];
@@ -447,11 +459,14 @@ void GazeboYarpSkin::OnWorldUpdate()
 	// Skip to next sensor if no contacts
 	if (contacts.contact_size() == 0)
 	    continue;
-	
-	for (size_t j=0; j<contacts.contact_size(); j++)
-	{
+
+	// For now consider only contact per each world update
+	// for (size_t j=0; j<contacts.contact_size(); j++)
+	// {
+	size_t j =0;
 	    for (size_t k=0; k<contacts.contact(j).position_size(); k++)
 	    {
+		
 		// Extract position from message
 		auto position = contacts.contact(j).position(k);
 
@@ -473,7 +488,8 @@ void GazeboYarpSkin::OnWorldUpdate()
 		yarp::sig::Vector diffVector(3, 0.0);
 		diffVector[0] = diffPos.X();
 		diffVector[1] = diffPos.Y();
-		diffVector[2] = diffPos.Z();		
+		diffVector[2] = diffPos.Z();
+
 		iCub::skinDynLib::dynContact dynContact(sensor.bodyPart,
 							static_cast<int>(sensor.linkNumber),
 							yarp::sig::Vector(3,0.0));
@@ -481,10 +497,19 @@ void GazeboYarpSkin::OnWorldUpdate()
 		skinContact.setSkinPart(sensor.skinPart);
 		skinContact.setGeoCenter(diffVector);
 
+		// Suppose each contact is due to one taxel only
+		skinContact.setActiveTaxels(1);
+
+		// Set the right taxel id depending on the finger
+		// involved in the contact
+		std::vector<unsigned int> taxelIds;
+		taxelIds.push_back(sensor.taxelId);
+		skinContact.setTaxelList(taxelIds);
+
 		// Add contact to the list
 		skinContactList.push_back(skinContact);
 	    }
-	}
+	// }
     }
     
     // Send data over port in case of contacts
