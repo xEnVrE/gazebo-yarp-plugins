@@ -36,3 +36,5 @@ add_subdirectory(contactloadcellarray)
 add_subdirectory(modelposepublisher)
 add_subdirectory(fakepointcloud)
 add_subdirectory(fakepointcloudviewer)
+add_subdirectory(estimateviewer)
+
