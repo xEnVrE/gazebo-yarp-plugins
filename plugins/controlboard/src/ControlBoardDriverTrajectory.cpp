@@ -112,6 +112,7 @@ TrajectoryGenerator::TrajectoryGenerator(gazebo::physics::Model* model)
 , m_speed(0)
 , m_joint_min(0)
 , m_joint_max(0)
+, m_joint_vel_max(0)
 {}
 
 TrajectoryGenerator::~TrajectoryGenerator() {}
@@ -126,6 +127,79 @@ bool  TrajectoryGenerator::setLimits(double min, double max)
     m_joint_min = min;
     m_joint_max = max;
     return true;
+}
+
+bool TrajectoryGenerator::setVelocityLimit(double max)
+{
+    m_joint_vel_max = max;
+    return true;
+}
+//------------------------------------------------------------------------------------------------------------------
+// VelocityIntegralGenerator
+//------------------------------------------------------------------------------------------------------------------
+
+VelocityIntegralGenerator::VelocityIntegralGenerator(gazebo::physics::Model* model)
+: TrajectoryGenerator(model) {}
+
+VelocityIntegralGenerator::~VelocityIntegralGenerator() {}
+
+bool VelocityIntegralGenerator::initTrajectory (double current_pos, double final_pos, double speed)
+{
+#if GAZEBO_MAJOR_VERSION >= 8
+    gazebo::physics::PhysicsEnginePtr physics = this->m_robot->GetWorld()->Physics();
+#else
+    gazebo::physics::PhysicsEnginePtr physics = this->m_robot->GetWorld()->GetPhysicsEngine();
+#endif
+    m_controllerPeriod = static_cast<unsigned>(physics->GetUpdatePeriod() * 1000.0);
+    setInitialPosition(current_pos);
+}
+
+bool VelocityIntegralGenerator::abortTrajectory(double limit)
+{
+    return true;
+}
+
+void VelocityIntegralGenerator::setInitialPosition(const double &position)
+{
+    m_currentReferencePosition = position;
+}
+
+void VelocityIntegralGenerator::setReferenceVelocity(const double &velocity)
+{
+    m_mutex.wait();
+    m_currentReferenceVelocity = velocity;
+    
+    if (abs(velocity) > m_joint_vel_max)
+	if (velocity > 0)
+	    m_currentReferenceVelocity = m_joint_vel_max;
+	else
+	    m_currentReferenceVelocity = -m_joint_vel_max;
+    m_mutex.post();
+}
+
+double VelocityIntegralGenerator::computeTrajectory()
+{
+    m_mutex.wait();
+    m_currentReferencePosition += m_currentReferenceVelocity * (m_controllerPeriod / 1000.0);
+    m_mutex.post();
+    
+    if (m_currentReferencePosition > m_joint_max)
+	m_currentReferencePosition = m_joint_max;
+    else if (m_currentReferencePosition < m_joint_min)
+	m_currentReferencePosition = m_joint_min;
+
+    return m_currentReferencePosition;
+}
+
+double VelocityIntegralGenerator::computeTrajectoryStep()
+{
+    // not implemented
+    return 0.0;
+}
+
+yarp::dev::TrajectoryType VelocityIntegralGenerator::getTrajectoryType()
+{
+    return yarp::dev::TRAJECTORY_TYPE_VEL_INTEGRAL;
 }
 
 //------------------------------------------------------------------------------------------------------------------
