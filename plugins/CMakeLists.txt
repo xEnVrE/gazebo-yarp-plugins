@@ -35,4 +35,4 @@ add_subdirectory(depthCamera)
 add_subdirectory(contactloadcellarray)
 add_subdirectory(modelposepublisher)
 add_subdirectory(fakepointcloud)
-
+add_subdirectory(fakepointcloudviewer)
