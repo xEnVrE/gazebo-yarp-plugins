@@ -26,6 +26,7 @@
 #include <boost/shared_ptr.hpp>
 #include <ControlBoardDriverTrajectory.h>
 #include <ControlBoardDriverCoupling.h>
+#include <ControlBoardDriverRange.h>
 
 #include <gazebo/common/PID.hh>
 #include <gazebo/common/Time.hh>
@@ -339,12 +340,6 @@ private:
         JointType_Unknown = 0,
         JointType_Revolute,
         JointType_Prismatic
-    };
-
-    struct Range {
-        Range() : min(0), max(0){}
-        double min;
-        double max;
     };
 
     std::string m_deviceName;
