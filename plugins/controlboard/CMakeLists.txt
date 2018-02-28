@@ -41,7 +41,8 @@ set(controlBoard_source     src/ControlBoard.cc
 set(controlBoard_headers    include/gazebo/ControlBoard.hh
                             include/yarp/dev/ControlBoardDriver.h
                             include/yarp/dev/ControlBoardDriverTrajectory.h
-                            include/yarp/dev/ControlBoardDriverCoupling.h)
+                            include/yarp/dev/ControlBoardDriverCoupling.h
+                            include/yarp/dev/ControlBoardDriverRange.h)
                             
                             
 set(LIB_COMMON_NAME gazebo_yarp_lib_common)
