@@ -180,7 +180,7 @@ bool ThumbCouplingHandler::decouplePosLimits (std::vector<Range> &pos_limits)
 {
     if (m_coupledJoints.size() != m_couplingSize) return false;
     pos_limits[m_coupledJoints[2]].min = pos_limits[m_coupledJoints[2]].min + pos_limits[m_coupledJoints[3]].min;
-    pos_limits[m_coupledJoints[2]].max = pos_limits[m_coupledJoints[2]].max + pos_limits[m_coupledJoints[3]].max;    
+    pos_limits[m_coupledJoints[2]].max = pos_limits[m_coupledJoints[2]].max + pos_limits[m_coupledJoints[3]].max;
     return true;
 }
 
@@ -258,7 +258,7 @@ bool IndexCouplingHandler::decouplePosLimits (std::vector<Range> &pos_limits)
 {
     if (m_coupledJoints.size() != m_couplingSize) return false;
     pos_limits[m_coupledJoints[1]].min = pos_limits[m_coupledJoints[1]].min + pos_limits[m_coupledJoints[2]].min;
-    pos_limits[m_coupledJoints[1]].max = pos_limits[m_coupledJoints[1]].max + pos_limits[m_coupledJoints[2]].max;    
+    pos_limits[m_coupledJoints[1]].max = pos_limits[m_coupledJoints[1]].max + pos_limits[m_coupledJoints[2]].max;
     return true;
 }
 
@@ -333,7 +333,7 @@ bool MiddleCouplingHandler::decouplePosLimits (std::vector<Range> &pos_limits)
 {
     if (m_coupledJoints.size() != m_couplingSize) return false;
     pos_limits[m_coupledJoints[1]].min = pos_limits[m_coupledJoints[1]].min + pos_limits[m_coupledJoints[2]].min;
-    pos_limits[m_coupledJoints[1]].max = pos_limits[m_coupledJoints[1]].max + pos_limits[m_coupledJoints[2]].max;    
+    pos_limits[m_coupledJoints[1]].max = pos_limits[m_coupledJoints[1]].max + pos_limits[m_coupledJoints[2]].max;
     return true;
 }
 
