@@ -110,6 +110,11 @@ namespace gazebo
 	gazebo::physics::ModelPtr m_model;
 
 	/**
+	 * Pointer to the SDF associated to the model
+	 */
+	sdf::ElementPtr m_sdf;
+
+	/**
 	 * Connection to the World update event of Gazebo
 	 */
 	gazebo::event::ConnectionPtr m_worldUpdateConnection;
@@ -134,6 +139,38 @@ namespace gazebo
 	 */
 	std::string m_whichHand;
 
+	/**
+	 * Name of the robot
+	 */
+	std::string m_robotName;
+
+	/**
+	 * Name of source frame requried to retrieve the pose of the robot
+	 */
+	std::string m_robotSourceFrameName;
+
+	/**
+	 * Name of target frame required to retrieve the pose of the robot
+	 */
+	std::string m_robotTargetFrameName;
+
+	/**
+	 * Name of the local port used to instantiate the driver
+	 * for FrameTransformClient
+	 */
+	std::string m_transformClientLocalPort;
+
+	/**
+	 * Name of the output port
+	 */
+	std::string m_outputPortName;
+
+	/**
+	 * Load a string parameter from the SDF
+	 *
+	 */
+	bool LoadStringParam(const std::string &name,
+					     std::string &value);
 	/*
 	 * Retrieve the pose of the robot root frame that is published
 	 * in the FrameTransformServer.

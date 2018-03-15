@@ -48,13 +48,48 @@ GazeboYarpSkin::~GazeboYarpSkin()
     // Close the port
     m_portSkin.close();
     
-    // Close the driver
+    // Close the drivers
+    m_drvTransformClient.close();
+}
+
+bool GazeboYarpSkin::LoadStringParam(const std::string &name,
+				     std::string &value)
+{
+    // Check if the element exists
+    if (!(m_sdf->HasElement(name))) {
+	yError() << "GazeboYarpSkin::Load error:"
+		 << "cannot find parameter"
+		 << name
+		 << "for the"
+		 << m_whichHand
+		 << "hand";
+	return false;
+    }
+
+    // Get the associated parameter
+    sdf::ParamPtr paramPtr = m_sdf->GetElement(name)->GetValue();
+
+    // Check if the value can be interpreted as a string
+    if (!paramPtr->Get<std::string>(value)) {
+	yError() << "GazeboYarpSkin::Load error:"
+		 << "parameter"
+		 << name
+		 << "for the"
+		 << m_whichHand
+		 << "hand should be a valid string";
+	return false;
+    }
+
+    return true;
 }
 
 void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
     // Store pointer to the model
     m_model = _parent;
+
+    // Store point to the SDF associated to the model
+    m_sdf = _sdf;
     
     // Check yarp network availability
     if (!m_yarp.checkNetwork(GazeboYarpPlugins::yarpNetworkInitializationTimeout)) {
@@ -80,17 +115,39 @@ void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
     }
     m_whichHand = whichHandValue.asString();
 
+    // Get robot name from the SDF
+    if (!LoadStringParam("robotName", m_robotName))
+	return;
+
+    // Get source frame name required to retrieve the pose of the robot
+    if (!LoadStringParam("robotSourceFrameName", m_robotSourceFrameName))
+	return;
+
+    // Get target frame name required to retrieve the pose of the robot
+    if (!LoadStringParam("robotTargeFrameName", m_robotTargetFrameName))
+	return;
+
+    // Get name of the local port used to instantiate FrameTransformClient driver
+    if (!LoadStringParam("transformClientLocalPort", m_transformClientLocalPort))
+	return;
+
+    // Get the output port name
+    if (!LoadStringParam("outputPortName", m_outputPortName))
+	return;
+
     // Prepare properties for the FrameTransformClient
     yarp::os::Property propTfClient;
     propTfClient.put("device", "transformClient");
-    propTfClient.put("local", "/gazebo_yarp_skin/" + m_whichHand + "_hand/transformClient");
+    propTfClient.put("local", m_transformClientLocalPort);
     propTfClient.put("remote", "/transformServer");
 	
     // try to open the driver
     ok = m_drvTransformClient.open(propTfClient);
     if (!ok) {
         yError() << "GazeboYarpSkin::Load error:"
-		 << "unable to open the FrameTransformClient driver.";
+		 << "unable to open the FrameTransformClient driver for the"
+		 << m_whichHand
+		 << "arm.";
 	return;
     }
     
@@ -98,7 +155,9 @@ void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
     ok = m_drvTransformClient.view(m_tfClient);
     if (!ok || m_tfClient == 0) {
         yError() << "GazeboYarpSkin::Load error:"
-		 << "unable to retrieve the FrameTransformClient view.";
+		 << "unable to retrieve the FrameTransformClient view for the"
+		 << m_whichHand
+		 << "arm.";
 	return;
     }
 
@@ -112,7 +171,7 @@ void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
     }
 
     // Open skin port
-    ok = m_portSkin.open("/" + m_whichHand + "_hand/skinManager/skin_events:o");
+    ok = m_portSkin.open(m_outputPortName);//"/" + m_whichHand + "_hand/skinManager/skin_events:o"
     if (!ok)  {
         yError() << "GazeboYarpSkin::Load error:"
 		 << "cannot open port /skinManager/skin_events:o";
@@ -129,8 +188,8 @@ bool GazeboYarpSkin::RetrieveRobotRootFrame(ignition::math::Pose3d &pose)
     // Get the pose of the root frame of the robot
     // TODO: get source and target from configuration file
     yarp::sig::Matrix inertialToRobot(4,4);
-    std::string source = "/inertial";
-    std::string target = "/iCub/frame";
+    std::string source = m_robotSourceFrameName;//"/inertial";
+    std::string target = m_robotTargetFrameName;//"/iCub/frame";
 
     // Get the transform 
     if (!m_tfClient->getTransform(target, source, inertialToRobot))
@@ -322,8 +381,8 @@ void GazeboYarpSkin::OnWorldUpdate()
 {
     // The first time this is executed and
     // until m_robotRootFrameReceived is true
-    // the transform between /inertial
-    // and the robot root frame is retrieved
+    // the transform between m_robotSourceFrameName
+    // and m_robotTargetFrameName is retrieved
     if (!m_robotRootFrameReceived)
     {
 	m_robotRootFrameReceived = RetrieveRobotRootFrame(m_inertialToRobot);
