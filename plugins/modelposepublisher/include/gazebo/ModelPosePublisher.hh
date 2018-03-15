@@ -133,6 +133,11 @@ namespace gazebo
 	gazebo::physics::ModelPtr m_model;
 
 	/**
+	 * Connection to the World reset event of Gazebo
+	 */
+	gazebo::event::ConnectionPtr m_worldResetConnection;
+
+	/**
 	 * Connection to the World update event of Gazebo
 	 */
 	gazebo::event::ConnectionPtr m_worldUpdateConnection;
@@ -161,6 +166,11 @@ namespace gazebo
 	 * Publish the transform from the inertial frame to the model root link frame.
 	 */	
 	void PublishTransform();
+
+	/**
+	 * Reset the internal time.
+	 */
+	void OnWorldReset();
 
 	/**
 	 * Check if a period is elapsed since last update 
