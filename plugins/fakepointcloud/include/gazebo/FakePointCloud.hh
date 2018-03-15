@@ -4,8 +4,8 @@
  * CopyPolicy: Released under the terms of the LGPLv2.1 or any later version, see LGPL.TXT or LGPL3.TXT
  */
 
-#ifndef GAZEBOYARP_FAKEPOINTCLOUD_HH
-#define GAZEBOYARP_FAKEPOINTCLOUD_HH
+#ifndef FAKEPOINTCLOUD_HH
+#define FAKEPOINTCLOUD_HH
 
 // gazebo
 #include <gazebo/common/Plugin.hh>
@@ -31,10 +31,10 @@ namespace gazebo
     ///
     /// ADD FURTHER EXPLANATIONS
 
-    class GazeboYarpFakePointCloud : public ModelPlugin
+    class FakePointCloud : public ModelPlugin
     {
     public:
-	~GazeboYarpFakePointCloud();
+	~FakePointCloud();
 	
 	/**
 	 * Store pointer to the model, load parameters from the SDF,
@@ -152,7 +152,7 @@ namespace gazebo
 namespace gazebo 
 {
     template<typename T>
-    bool GazeboYarpFakePointCloud::LoadParam(const std::string &name,
+    bool FakePointCloud::LoadParam(const std::string &name,
 					     T &param)
     {
 	// Check if the element exists
@@ -184,7 +184,7 @@ namespace gazebo
     }
 	
     template<typename T>
-    bool GazeboYarpFakePointCloud::LoadStrictPositiveScalarParam(const std::string &name,
+    bool FakePointCloud::LoadStrictPositiveScalarParam(const std::string &name,
 								 T &param)
     {
 	if (!LoadParam<T>(name, param))

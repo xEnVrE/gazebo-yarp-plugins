@@ -33,17 +33,17 @@
 //
 #include "FakePointCloud.hh"
 
-GZ_REGISTER_MODEL_PLUGIN(gazebo::GazeboYarpFakePointCloud)
+GZ_REGISTER_MODEL_PLUGIN(gazebo::FakePointCloud)
 
 namespace gazebo {
 
-GazeboYarpFakePointCloud::~GazeboYarpFakePointCloud()
+FakePointCloud::~FakePointCloud()
 {
     // close the output port
     m_portOut.close();
 }
 
-bool GazeboYarpFakePointCloud::LoadObserverOrigin(yarp::sig::Vector &origin)
+bool FakePointCloud::LoadObserverOrigin(yarp::sig::Vector &origin)
 {
     // Try to load the origin of the observer
     ignition::math::Vector3d originIgn;    
@@ -61,7 +61,7 @@ bool GazeboYarpFakePointCloud::LoadObserverOrigin(yarp::sig::Vector &origin)
     return true;
 }
 
-bool GazeboYarpFakePointCloud::LoadMeshPath(std::string &path)
+bool FakePointCloud::LoadMeshPath(std::string &path)
 {
     // Try to load the mesh path
     std::string sdfPath;
@@ -84,7 +84,7 @@ bool GazeboYarpFakePointCloud::LoadMeshPath(std::string &path)
     return true;
 }
 
-bool GazeboYarpFakePointCloud::ConfigureMesh()
+bool FakePointCloud::ConfigureMesh()
 {
     std::string meshPath;
     if (!LoadMeshPath(meshPath))
@@ -97,7 +97,7 @@ bool GazeboYarpFakePointCloud::ConfigureMesh()
 		<< "loaded for model"
 		<< m_modelName;
     } else {
-	yError() << "GazeboYarpFakePointCloud::Load error:"
+	yError() << "FakePointCloud::Load error:"
 		 << "cannot load mesh"
 		 << meshPath
 		 << "for model"
@@ -108,11 +108,11 @@ bool GazeboYarpFakePointCloud::ConfigureMesh()
     return true;
 }
 
-void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
+void FakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
     // Check yarp network availability
     if (!m_yarp.checkNetwork(GazeboYarpPlugins::yarpNetworkInitializationTimeout)) {
-        yError() << "GazeboYarpFakePointCloud::Load error:"
+        yError() << "FakePointCloud::Load error:"
 		 << "yarp network does not seem to be available, is the yarpserver running?";
         return;
     }
@@ -195,11 +195,11 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     }
 
     // Listen to the update event
-    auto worldUpdateBind = boost::bind(&GazeboYarpFakePointCloud::OnWorldUpdate, this);
+    auto worldUpdateBind = boost::bind(&FakePointCloud::OnWorldUpdate, this);
     m_worldUpdateConnection = gazebo::event::Events::ConnectWorldUpdateBegin(worldUpdateBind);
 }
 
-void GazeboYarpFakePointCloud::OnWorldUpdate()
+void FakePointCloud::OnWorldUpdate()
 {    
     // Get current time
 #if GAZEBO_MAJOR_VERSION >= 8
@@ -236,7 +236,7 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
 	    }
 	    if(!m_viewer.showPointCloud(cloud_ign)) {
 
-		yError() << "GazeboYarpFakePointCloud::OnWorldUpdate error:"
+		yError() << "FakePointCloud::OnWorldUpdate error:"
 			 << "failure in point cloud visualization for model"
 			 << m_modelName;
 	    }
@@ -246,7 +246,7 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
     }
 }
 
-void GazeboYarpFakePointCloud::SamplePointCloud(PointCloud &pc)
+void FakePointCloud::SamplePointCloud(PointCloud &pc)
 {
     // Get the current pose of the canonical link of the model
 #if GAZEBO_MAJOR_VERSION >= 8
