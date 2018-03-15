@@ -15,14 +15,11 @@
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/Property.h>
 #include <yarp/dev/PolyDriver.h>
-#include <yarp/dev/ControlBoardInterfaces.h>
 #include <yarp/dev/IFrameTransform.h>
-#include <yarp/dev/IEncoders.h>
 
 // icub-main
 #include <iCub/skinDynLib/common.h>
 #include <iCub/skinDynLib/skinContactList.h>
-#include <iCub/iKin/iKinFwd.h>
 
 // std
 #include <string>
@@ -92,26 +89,6 @@ namespace gazebo
 	yarp::os::Property m_parameters;
 
 	/**
-	 * Driver required to access the IEncoder interface
-	 */
-	yarp::dev::PolyDriver m_drvEncArm;
-
-	/**
-	 * Driver required to access the IEncoder interface
-	 */
-	yarp::dev::PolyDriver m_drvEncTorso;
-
-	/**
-	 * Pointer to the Encoders view
-	 */
-	yarp::dev::IEncoders *m_iEncArm;
-
-	/**
-	 * Pointer to the Encoders view
-	 */
-	yarp::dev::IEncoders *m_iEncTorso;
-
-	/**
 	 * Driver required to access the IFrameTransform interface
 	 */
 	yarp::dev::PolyDriver m_drvTransformClient;
@@ -128,14 +105,14 @@ namespace gazebo
 	bool m_robotRootFrameReceived;
 
 	/**
-	 * Robot arm chain
-	 */
-	iCub::iKin::iCubArm m_arm;
-
-	/**
 	 * Pointer to the model where the plugin is inserted
 	 */
 	gazebo::physics::ModelPtr m_model;
+
+	/**
+	 * Pointer to the SDF associated to the model
+	 */
+	sdf::ElementPtr m_sdf;
 
 	/**
 	 * Connection to the World update event of Gazebo
@@ -162,6 +139,38 @@ namespace gazebo
 	 */
 	std::string m_whichHand;
 
+	/**
+	 * Name of the robot
+	 */
+	std::string m_robotName;
+
+	/**
+	 * Name of source frame requried to retrieve the pose of the robot
+	 */
+	std::string m_robotSourceFrameName;
+
+	/**
+	 * Name of target frame required to retrieve the pose of the robot
+	 */
+	std::string m_robotTargetFrameName;
+
+	/**
+	 * Name of the local port used to instantiate the driver
+	 * for FrameTransformClient
+	 */
+	std::string m_transformClientLocalPort;
+
+	/**
+	 * Name of the output port
+	 */
+	std::string m_outputPortName;
+
+	/**
+	 * Load a string parameter from the SDF
+	 *
+	 */
+	bool LoadStringParam(const std::string &name,
+					     std::string &value);
 	/*
 	 * Retrieve the pose of the robot root frame that is published
 	 * in the FrameTransformServer.
@@ -185,11 +194,6 @@ namespace gazebo
 	 * listed in the .ini configuration file.
 	 */	
 	bool ConfigureAllContactSensors();
-
-	/*
-	 * Retrieve the pose of the frame attached to the hand of the robot.
-	 */
-	bool RetrieveHandPose(ignition::math::Pose3d &pose);
 	
 	/**
 	 *

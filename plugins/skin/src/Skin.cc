@@ -48,13 +48,48 @@ GazeboYarpSkin::~GazeboYarpSkin()
     // Close the port
     m_portSkin.close();
     
-    // Close the driver
+    // Close the drivers
+    m_drvTransformClient.close();
+}
+
+bool GazeboYarpSkin::LoadStringParam(const std::string &name,
+				     std::string &value)
+{
+    // Check if the element exists
+    if (!(m_sdf->HasElement(name))) {
+	yError() << "GazeboYarpSkin::Load error:"
+		 << "cannot find parameter"
+		 << name
+		 << "for the"
+		 << m_whichHand
+		 << "hand";
+	return false;
+    }
+
+    // Get the associated parameter
+    sdf::ParamPtr paramPtr = m_sdf->GetElement(name)->GetValue();
+
+    // Check if the value can be interpreted as a string
+    if (!paramPtr->Get<std::string>(value)) {
+	yError() << "GazeboYarpSkin::Load error:"
+		 << "parameter"
+		 << name
+		 << "for the"
+		 << m_whichHand
+		 << "hand should be a valid string";
+	return false;
+    }
+
+    return true;
 }
 
 void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
     // Store pointer to the model
     m_model = _parent;
+
+    // Store point to the SDF associated to the model
+    m_sdf = _sdf;
     
     // Check yarp network availability
     if (!m_yarp.checkNetwork(GazeboYarpPlugins::yarpNetworkInitializationTimeout)) {
@@ -80,56 +115,39 @@ void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
     }
     m_whichHand = whichHandValue.asString();
 
-    // Prepare properties for the Encoders
-    yarp::os::Property propEncArm;
-    propEncArm.put("device", "remote_controlboard");
-    propEncArm.put("remote", "/icubSim/" + m_whichHand + "_arm");
-    propEncArm.put("local", "/gazebo_yarp_skin/encoder/" + m_whichHand + "_arm");
-    ok = m_drvEncArm.open(propEncArm);
-    if (!ok) {
-        yError() << "GazeboYarpSkin::Load error:"
-		 << "unable to open the Remote Control Board driver for the arm.";
+    // Get robot name from the SDF
+    if (!LoadStringParam("robotName", m_robotName))
 	return;
-    }
 
-    yarp::os::Property propEncTorso;
-    propEncTorso.put("device", "remote_controlboard");
-    propEncTorso.put("remote", "/icubSim/torso");
-    propEncTorso.put("local", "/gazebo_yarp_skin/encoder/" + m_whichHand + "_arm/torso");
-    ok = m_drvEncTorso.open(propEncTorso);
-    if (!ok) {
-        yError() << "GazeboYarpSkin::Load error:"
-		 << "unable to open the Remote Control Board driver for the torso.";
+    // Get source frame name required to retrieve the pose of the robot
+    if (!LoadStringParam("robotSourceFrameName", m_robotSourceFrameName))
 	return;
-    }
-    
-    // Try to retrieve the views
-    m_drvEncArm.view(m_iEncArm);
-    if (!ok || m_iEncArm == 0) {
-        yError() << "GazeboYarpSkin::Load error:"
-		 << "unable to retrieve the Encoders view for the arm.";
-	return;
-    }
 
-    m_drvEncTorso.view(m_iEncTorso);
-    if (!ok || m_iEncTorso == 0) {
-        yError() << "GazeboYarpSkin::Load error:"
-		 << "unable to retrieve the Encoders view for the torso.";
+    // Get target frame name required to retrieve the pose of the robot
+    if (!LoadStringParam("robotTargeFrameName", m_robotTargetFrameName))
 	return;
-    }
 
+    // Get name of the local port used to instantiate FrameTransformClient driver
+    if (!LoadStringParam("transformClientLocalPort", m_transformClientLocalPort))
+	return;
+
+    // Get the output port name
+    if (!LoadStringParam("outputPortName", m_outputPortName))
+	return;
 
     // Prepare properties for the FrameTransformClient
     yarp::os::Property propTfClient;
     propTfClient.put("device", "transformClient");
-    propTfClient.put("local", "/gazebo_yarp_skin/" + m_whichHand + "_hand/transformClient");
+    propTfClient.put("local", m_transformClientLocalPort);
     propTfClient.put("remote", "/transformServer");
 	
     // try to open the driver
     ok = m_drvTransformClient.open(propTfClient);
     if (!ok) {
         yError() << "GazeboYarpSkin::Load error:"
-		 << "unable to open the FrameTransformClient driver.";
+		 << "unable to open the FrameTransformClient driver for the"
+		 << m_whichHand
+		 << "arm.";
 	return;
     }
     
@@ -137,7 +155,9 @@ void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
     ok = m_drvTransformClient.view(m_tfClient);
     if (!ok || m_tfClient == 0) {
         yError() << "GazeboYarpSkin::Load error:"
-		 << "unable to retrieve the FrameTransformClient view.";
+		 << "unable to retrieve the FrameTransformClient view for the"
+		 << m_whichHand
+		 << "arm.";
 	return;
     }
 
@@ -151,22 +171,12 @@ void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
     }
 
     // Open skin port
-    ok = m_portSkin.open("/" + m_whichHand + "_hand/skinManager/skin_events:o");
+    ok = m_portSkin.open(m_outputPortName);//"/" + m_whichHand + "_hand/skinManager/skin_events:o"
     if (!ok)  {
         yError() << "GazeboYarpSkin::Load error:"
 		 << "cannot open port /skinManager/skin_events:o";
         return;
     }
-
-    // Instantiate an arm chain
-    m_arm = iCub::iKin::iCubArm(m_whichHand);
-    // Limits update is not required to evaluate the forward kinematics
-    // using angles from the encoders
-    m_arm.setAllConstraints(false);
-    // Torso can be moved in general so its links have to be released
-    m_arm.releaseLink(0);
-    m_arm.releaseLink(1);
-    m_arm.releaseLink(2);
 	
     // listen to the update event
     auto worldUpdateBind = boost::bind(&GazeboYarpSkin::OnWorldUpdate, this);
@@ -178,8 +188,8 @@ bool GazeboYarpSkin::RetrieveRobotRootFrame(ignition::math::Pose3d &pose)
     // Get the pose of the root frame of the robot
     // TODO: get source and target from configuration file
     yarp::sig::Matrix inertialToRobot(4,4);
-    std::string source = "/inertial";
-    std::string target = "/iCub/frame";
+    std::string source = m_robotSourceFrameName;//"/inertial";
+    std::string target = m_robotTargetFrameName;//"/iCub/frame";
 
     // Get the transform 
     if (!m_tfClient->getTransform(target, source, inertialToRobot))
@@ -366,61 +376,13 @@ bool GazeboYarpSkin::ConfigureAllContactSensors()
 
     return true;
 }
-
-bool GazeboYarpSkin::RetrieveHandPose(ignition::math::Pose3d &pose)
-{
-    // Get current value of encoders
-    yarp::sig::Vector encsTorso(3);
-    yarp::sig::Vector encsArm(16);
-
-    bool ok = m_iEncArm->getEncoders(encsArm.data());
-    if(!ok)
-	return false;
-
-    ok = m_iEncTorso->getEncoders(encsTorso.data());
-    if(!ok)
-	return false;
-
-    // Fill in the vector of degrees of freedom
-    yarp::sig::Vector jointsAngles(m_arm.getDOF());
-    jointsAngles[0] = encsTorso[2];
-    jointsAngles[1] = encsTorso[1];
-    jointsAngles[2] = encsTorso[0];
-    jointsAngles[3] = encsArm[0];
-    jointsAngles[4] = encsArm[1];
-    jointsAngles[5] = encsArm[2];
-    jointsAngles[6] = encsArm[3];
-    jointsAngles[7] = encsArm[4];
-    jointsAngles[8] = encsArm[5];    
-    jointsAngles[9] = encsArm[6];
-
-    // Set the current values of the joints
-    // iKin uses radians
-    m_arm.setAng((M_PI/180) * jointsAngles);
-
-    // Get pose of the hand
-    // as x,y,z + axis/angle
-    yarp::sig::Vector poseVector;
-    bool axisAngleRepr = true;
-    poseVector = m_arm.EndEffPose(axisAngleRepr);
-
-    // Convert attitude to a quaternion
-    yarp::math::Quaternion quat;
-    quat.fromAxisAngle(poseVector.subVector(3,6));
-
-    // Convert to a ignition::math::Pose3d
-    pose = ignition::math::Pose3d(poseVector[0], poseVector[1], poseVector[2],
-				  quat.w(), quat.x(), quat.y(), quat.z());
-
-    return true;
-}
 	
 void GazeboYarpSkin::OnWorldUpdate()
 {
     // The first time this is executed and
     // until m_robotRootFrameReceived is true
-    // the transform between /inertial
-    // and the robot root frame is retrieved
+    // the transform between m_robotSourceFrameName
+    // and m_robotTargetFrameName is retrieved
     if (!m_robotRootFrameReceived)
     {
 	m_robotRootFrameReceived = RetrieveRobotRootFrame(m_inertialToRobot);
@@ -431,22 +393,6 @@ void GazeboYarpSkin::OnWorldUpdate()
 	}
     }
 
-    // Retrieve hand pose
-    ignition::math::Pose3d handPose;
-    if (!RetrieveHandPose(handPose)) {
-        yError() << "GazeboYarpSkin::OnWorldUpdate error:"
-		 << "unable to get the pose of the"
-		 << m_whichHand
-		 << "hand";
-        return;
-    }
-
-    // Compose transformation from inertial to robot root frame
-    // and transformation from robot root frame to hand frame
-    // WARNING: the '+' operator between ignition::math::Pose3d poses
-    //          is not commutative!
-    ignition::math::Pose3d inertialToHand = handPose + m_inertialToRobot;
-    
     // Process contacts for each contact sensor
     iCub::skinDynLib::skinContactList &skinContactList = m_portSkin.prepare();
     skinContactList.clear();
@@ -474,13 +420,9 @@ void GazeboYarpSkin::OnWorldUpdate()
 		ignition::math::Pose3d point(position.x(), position.y(), position.z(),
 					     0, 0, 0);
 
-		// Find the vector from the center of the palm of the hand
-		// to the contact point expressed in the frame attached to the
-		// palm of the hand (as done in the skinManager)
-		ignition::math::Pose3d diff = point - inertialToHand;
-		
-		// One skinContact for each position is considered
-		// TODO: averaging may be an idea
+		// Find the vector from the center of the root frame of the robot
+		// to the contact points expressed in the root frame of the robot
+		ignition::math::Pose3d diff = point - m_inertialToRobot;
 		
 		// Only geometric center of the contact is considered
 		// in this implementation
