@@ -51,6 +51,30 @@ void EstimateViewer::Load(gazebo::rendering::VisualPtr _parent, sdf::ElementPtr 
     // Store model name
     m_modelName = GetModelName();
 
+    // Retrieve local port suffix from the SDF
+    std::string tagName = "clientLocalPortSuffix";
+    std::string localPortSuffix;
+    if (!(_sdf->HasElement(tagName))) {
+	yError() << "EstimateViewer::Load error:"
+		 << "cannot find parameter"
+		 << tagName
+		 << "for model"
+		 << m_modelName;
+	return;
+    }
+    // Get the associated parameter
+    sdf::ParamPtr paramPtr = _sdf->GetElement(tagName)->GetValue();
+
+    // Check if the value is a valid string
+    if (!paramPtr->Get<std::string>(localPortSuffix)) {
+	yError() << "EstimateViewer::Load error:"
+		 << "parameter"
+		 << tagName
+		 << "for model"
+		 << m_modelName << "should be a valid string";
+	return;
+    }
+
     // Prepare properties for the PolyDriver
     // It is used to access a IFrameTransformServer where
     // the estimated pose of the object is published
@@ -59,7 +83,8 @@ void EstimateViewer::Load(gazebo::rendering::VisualPtr _parent, sdf::ElementPtr 
     // The local port depends on the model name that is unique
     // also in the case of multiple insertions of the same model
     // in Gazebo
-    propTfClient.put("local", "/" + m_modelName + "/estimate_viewer/transformClient:i");
+    // propTfClient.put("local", "/" + m_modelName + "/estimate_viewer/transformClient:i");
+    propTfClient.put("local", "/" + m_modelName + "/" + localPortSuffix);
     propTfClient.put("remote", "/transformServer");
 
     // Open the driver and obtain a IFrameTransform view
