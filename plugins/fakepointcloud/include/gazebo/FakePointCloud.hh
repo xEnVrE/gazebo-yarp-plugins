@@ -44,6 +44,11 @@ namespace gazebo
 	void Load(gazebo::physics::ModelPtr, sdf::ElementPtr);
 
 	/**
+	 * Reset the internal time.
+	 */
+	void OnWorldReset();
+
+	/**
 	 * Check if a period is elapsed since last update 
 	 * and in case sample a new point cloud, send it over 
 	 * the output port and update the visualization markers.
@@ -71,6 +76,11 @@ namespace gazebo
 	 * Pointer to the sdf associated to the model
 	 */
 	sdf::ElementPtr m_sdf;
+
+	/**
+	 * Connection to the World reset event of Gazebo
+	 */
+	gazebo::event::ConnectionPtr m_worldResetConnection;
 
 	/**
 	 * Connection to the World update event of Gazebo
