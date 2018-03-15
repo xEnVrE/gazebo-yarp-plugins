@@ -96,6 +96,10 @@ void GazeboYarpModelPosePublisher::Load(gazebo::physics::ModelPtr _parent, sdf::
     // Clear last update time
     m_lastUpdateTime = gazebo::common::Time(0.0);
 
+    // Listen to the reset event
+    auto worldResetBind = boost::bind(&GazeboYarpModelPosePublisher::OnWorldReset, this);
+    m_worldResetConnection = gazebo::event::Events::ConnectWorldReset(worldResetBind);
+
     // Listen to the update event
     auto worldUpdateBind = boost::bind(&GazeboYarpModelPosePublisher::OnWorldUpdate, this);
     m_worldUpdateConnection = gazebo::event::Events::ConnectWorldUpdateBegin(worldUpdateBind);
@@ -134,6 +138,12 @@ void GazeboYarpModelPosePublisher::PublishTransform()
     m_tfClient->setTransform("/" + m_model->GetName() + "/frame",
 			     "/inertial",
 			     inertialToModel.toMatrix());
+}
+
+void GazeboYarpModelPosePublisher::OnWorldReset()
+{
+    // Reset the time
+    m_lastUpdateTime = gazebo::common::Time(0.0);
 }
 
 void GazeboYarpModelPosePublisher::OnWorldUpdate()
