@@ -55,6 +55,11 @@ namespace gazebo
 	gazebo::rendering::VisualPtr m_visual;
 
 	/**
+	 * Pointer to the sdf associated to the visual
+	 */
+	sdf::ElementPtr m_sdf;	
+
+	/**
 	 * Connection to the Render event of Gazebo
 	 */
 	gazebo::event::ConnectionPtr m_renderConnection;
@@ -64,6 +69,21 @@ namespace gazebo
 	 */
 	std::string m_modelName;
 
+	/**
+	 * Name of the source frame required to retrieve the current estimate
+	 */
+	std::string m_sourceFrameName;
+
+	/**
+	 * Target frame suffix required to retrieve the current estimate
+	 */
+	std::string m_targetFrameNameSuffix;
+
+	/**
+	 * Load a string parameter from the SDF
+	 */
+	bool LoadStringParam(const std::string &name,
+			     std::string &value);
 	/**
 	 * Extract the name of the model from the name of the visual
 	 */

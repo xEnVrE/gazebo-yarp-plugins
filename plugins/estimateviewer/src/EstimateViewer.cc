@@ -36,6 +36,35 @@ EstimateViewer::~EstimateViewer()
     m_drvTransformClient.close();
 }
 
+bool EstimateViewer::LoadStringParam(const std::string &name,
+				     std::string &value)
+{
+    // Check if the element exists
+    if (!(m_sdf->HasElement(name))) {
+	yError() << "EstimateViewer::Load error:"
+		 << "cannot find parameter"
+		 << name
+		 << "for model"
+		 << m_modelName;
+	return false;
+    }
+
+    // Get the associated parameter
+    sdf::ParamPtr paramPtr = m_sdf->GetElement(name)->GetValue();
+	    
+    // Check if the value can be interpreted as a string
+    if (!paramPtr->Get<std::string>(value)) {
+	yError() << "EstimateViewer::Load error:"
+		 << "parameter"
+		 << name
+		 << "for model"
+		 << m_modelName << "should be a valid string";
+	return false;
+    }
+    
+    return true;
+}
+
 void EstimateViewer::Load(gazebo::rendering::VisualPtr _parent, sdf::ElementPtr _sdf)
 {
     // Check yarp network availability
@@ -48,9 +77,27 @@ void EstimateViewer::Load(gazebo::rendering::VisualPtr _parent, sdf::ElementPtr 
     // Store pointer to the visual
     m_visual = _parent;
 
+    // Store pointer to the sdf associated to the visual
+    m_sdf = _sdf;
+
     // Store model name
     m_modelName = GetModelName();
 
+    // Load local port suffix from the SDF
+    std::string localPortSuffix;
+    if (!LoadStringParam("clientLocalPortSuffix", localPortSuffix))
+	return;
+
+    // Load source frame name required to obtain
+    // the current pose of the estimate
+    if (!LoadStringParam("sourceFrameName", m_sourceFrameName))
+	return;    
+
+    // Load target frame suffix requried to obtain
+    // the current pose of the estimate
+    if (!LoadStringParam("targetFrameNameSuffix", m_targetFrameNameSuffix))
+	return;
+	
     // Prepare properties for the PolyDriver
     // It is used to access a IFrameTransformServer where
     // the estimated pose of the object is published
@@ -59,7 +106,8 @@ void EstimateViewer::Load(gazebo::rendering::VisualPtr _parent, sdf::ElementPtr 
     // The local port depends on the model name that is unique
     // also in the case of multiple insertions of the same model
     // in Gazebo
-    propTfClient.put("local", "/" + m_modelName + "/estimate_viewer/transformClient:i");
+    // propTfClient.put("local", "/" + m_modelName + "/estimate_viewer/transformClient:i");
+    propTfClient.put("local", "/" + m_modelName + "/" + localPortSuffix);
     propTfClient.put("remote", "/transformServer");
 
     // Open the driver and obtain a IFrameTransform view
@@ -105,9 +153,12 @@ void EstimateViewer::OnRenderUpdate()
 {
     // Get the estimated pose
     yarp::sig::Matrix matrixTransform(4, 4);
-    std::string source = "/inertial";
-    std::string target = "/" + m_modelName + "/estimate/frame";
-    bool ok_transform = m_tfClient->getTransform(target, source, matrixTransform);
+    // Model name is used to ensure uniqueness of target frame name
+    // in case of multiple insertion of the same model in the environment
+    std::string target = "/" + m_modelName + "/" + m_targetFrameNameSuffix;
+    bool ok_transform = m_tfClient->getTransform(target,
+						 m_sourceFrameName,
+						 matrixTransform);
     // Return if the transform is not ready
     if (!ok_transform)
     	return;
