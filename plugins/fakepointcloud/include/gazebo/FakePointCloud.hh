@@ -4,8 +4,8 @@
  * CopyPolicy: Released under the terms of the LGPLv2.1 or any later version, see LGPL.TXT or LGPL3.TXT
  */
 
-#ifndef GAZEBOYARP_FAKEPOINTCLOUD_HH
-#define GAZEBOYARP_FAKEPOINTCLOUD_HH
+#ifndef FAKEPOINTCLOUD_HH
+#define FAKEPOINTCLOUD_HH
 
 // gazebo
 #include <gazebo/common/Plugin.hh>
@@ -31,10 +31,10 @@ namespace gazebo
     ///
     /// ADD FURTHER EXPLANATIONS
 
-    class GazeboYarpFakePointCloud : public ModelPlugin
+    class FakePointCloud : public ModelPlugin
     {
     public:
-	~GazeboYarpFakePointCloud();
+	~FakePointCloud();
 	
 	/**
 	 * Store pointer to the model, load parameters from the SDF,
@@ -42,6 +42,11 @@ namespace gazebo
 	 * connect the method OnWorldUpdate to the World update event of Gazebo
 	 */	
 	void Load(gazebo::physics::ModelPtr, sdf::ElementPtr);
+
+	/**
+	 * Reset the internal time.
+	 */
+	void OnWorldReset();
 
 	/**
 	 * Check if a period is elapsed since last update 
@@ -66,6 +71,16 @@ namespace gazebo
 	 * Pointer to the model where the plugin is inserted
 	 */
 	gazebo::physics::ModelPtr m_model;
+
+	/**
+	 * Pointer to the sdf associated to the model
+	 */
+	sdf::ElementPtr m_sdf;
+
+	/**
+	 * Connection to the World reset event of Gazebo
+	 */
+	gazebo::event::ConnectionPtr m_worldResetConnection;
 
 	/**
 	 * Connection to the World update event of Gazebo
@@ -108,6 +123,34 @@ namespace gazebo
 	 * Model name
 	 */	
 	bool m_modelName;
+
+	/**
+	 * Load a parameter with a certain type from the SDF
+	 */	
+	template<typename T>
+	bool LoadParam(const std::string &name,
+		       T &param);
+
+	/**
+	 * Load a positive scalar parameter from the SDF
+	 */	
+	template<typename T>
+	bool LoadStrictPositiveScalarParam(const std::string &name,
+					   T &param);
+	/**
+	 * Load parameter observerOrigin from the SDF
+	 */	
+	bool LoadObserverOrigin(yarp::sig::Vector &origin);
+
+	/**
+	 * Load parameter meshPath from the SDF
+	 */	
+	bool LoadMeshPath(std::string &path);
+
+	/**
+	 * Configure the mesh of the object to be sampled
+	 */	
+	bool ConfigureMesh();
 	
 	/**
 	 * Sample a point cloud and send it to a port
@@ -116,4 +159,63 @@ namespace gazebo
     };
 }
 
+namespace gazebo 
+{
+    template<typename T>
+    bool FakePointCloud::LoadParam(const std::string &name,
+					     T &param)
+    {
+	// Check if the element exists
+	if (!(m_sdf->HasElement(name))) {
+	    yError() << "FakePointCloud::Load error:"
+		     << "cannot find parameter"
+		     << name
+		     << "for model"
+		     << m_model->GetName();
+	    return false;
+	}
+
+	// Get the associated parameter
+	sdf::ParamPtr paramPtr = m_sdf->GetElement(name)->GetValue();
+	    
+	// Check if the value can be interpreted
+	// as the required type
+	if (!paramPtr->Get<T>(param)) {
+	    yError() << "FakePointCloud::Load error:"
+		     << "parameter"
+		     << name
+		     << "for model"
+		     << m_modelName << "should be a"
+		     << typeid(param).name();
+	    return false;
+	}
+    
+	return true;
+    }
+	
+    template<typename T>
+    bool FakePointCloud::LoadStrictPositiveScalarParam(const std::string &name,
+								 T &param)
+    {
+	if (!LoadParam<T>(name, param))
+	    return false;
+
+	if (param <= 0) {
+	    yError() << "FakePointCloud::Load error:"
+		     << "parameter"
+		     << name
+		     << "for model"
+		     << m_modelName << "should be a strictly positive"
+		     << typeid(param).name();
+	    return false;
+	}
+
+	yInfo() << "FakePointCloud::Load"
+		<< name
+		<< "is"
+		<< param;
+
+	return true;
+    }
+}
 #endif
