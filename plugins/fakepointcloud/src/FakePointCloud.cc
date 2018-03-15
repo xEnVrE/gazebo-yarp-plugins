@@ -37,45 +37,75 @@ GZ_REGISTER_MODEL_PLUGIN(gazebo::GazeboYarpFakePointCloud)
 
 namespace gazebo {
 
-void GazeboYarpFakePointCloud::SamplePointCloud(PointCloud &pc)
-{
-    // Get the current pose of the canonical link of the model
-#if GAZEBO_MAJOR_VERSION >= 8
-    ignition::math::Pose3d curPose = m_model->GetLink()->WorldPose();
-#else
-    gazebo::math::Pose curPoseGazebo = m_model->GetLink()->GetWorldPose();
-    // Convert to Ignition so that the same interface
-    // can be used in the rest of the function
-    ignition::math::Pose3d curPose = curPoseGazebo.Ign();
-#endif
-
-    // Get the positional and rotational parts
-    ignition::math::Vector3d pos = curPose.Pos();
-    ignition::math::Quaterniond rot = curPose.Rot();
-    
-    // Fill yarp-like quantities
-    yarp::sig::Vector position;
-    yarp::math::Quaternion attitude;
-	
-    position.push_back(pos.X());
-    position.push_back(pos.Y());
-    position.push_back(pos.Z());
-
-    attitude = yarp::math::Quaternion(rot.X(),
-				      rot.Y(),
-				      rot.Z(),
-				      rot.W());
-    // Set current pose
-    m_sampler.SetPose(position, attitude);
-    
-    // Sample the point cloud
-    m_sampler.SamplePointCloud(m_nPoints, pc);
-}
-
 GazeboYarpFakePointCloud::~GazeboYarpFakePointCloud()
 {
     // close the output port
     m_portOut.close();
+}
+
+bool GazeboYarpFakePointCloud::LoadObserverOrigin(yarp::sig::Vector &origin)
+{
+    // Try to load the origin of the observer
+    ignition::math::Vector3d originIgn;    
+    if (!LoadParam<ignition::math::Vector3d>("observerOrigin", originIgn))
+	return false;
+
+    // Convert to yarp vector
+    origin.resize(3);
+    for (size_t i=0; i<3; i++)
+	origin[i] = originIgn[i];
+	
+    yInfo() << "FakePointCloud::Load observer origin is"
+	    << origin.toString();
+
+    return true;
+}
+
+bool GazeboYarpFakePointCloud::LoadMeshPath(std::string &path)
+{
+    // Try to load the mesh path
+    std::string sdfPath;
+    if (!LoadParam<std::string>("meshPath", sdfPath))
+	return false;
+    
+    // The retrieved path is relative to the path of a gazebo model
+    // hence the complete path has to be evaluated
+    path = gazebo::common::SystemPaths::Instance()->FindFileURI(sdfPath);
+
+    // Check for empty path
+    // which could happen in case of FindFileURI failing
+    if (path.empty()) {
+	yError() << "FakePointCloud::Load error:"
+		 << "the mesh path evaluated to an empty string for model name"
+		 << m_modelName;
+	return false;
+    }
+    
+    return true;
+}
+
+bool GazeboYarpFakePointCloud::ConfigureMesh()
+{
+    std::string meshPath;
+    if (!LoadMeshPath(meshPath))
+	return false;
+	
+    // Configure object mesh within the sampler
+    if (m_sampler.LoadObjectModel(meshPath)) {
+	yInfo() << "FakePointCloud::Load mesh"
+		<< meshPath
+		<< "loaded for model"
+		<< m_modelName;
+    } else {
+	yError() << "GazeboYarpFakePointCloud::Load error:"
+		 << "cannot load mesh"
+		 << meshPath
+		 << "for model"
+		 << m_modelName;
+	return false;
+    }
+
+    return true;
 }
 
 void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
@@ -90,130 +120,79 @@ void GazeboYarpFakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::Elem
     // Store pointer to the model
     m_model = _parent;
 
+    // Store pointer to the sdf
+    m_sdf = _sdf;
+
     // Get name of the model
     std::string m_modelName = m_model->GetName();
 
-    // Open port
-    std::string port_name = "/" + m_modelName + "/fakepointcloud:o";
-    bool isPortOpen = m_portOut.open(port_name);
-    if (!isPortOpen) {
-	yError() << "GazeboYarpFakePointCloud::Load error:"
-	         << "cannot open output port for model"
-		 << m_modelName;
+    // Load update rate
+    if (!LoadStrictPositiveScalarParam<double>("period", m_period))
 	return;
-    }
-    
-    // Load update period
-    if (_sdf->HasElement("period")) {
-	// set update period
-        m_period = _sdf->Get<double>("period");
-
-	yInfo() << "GazeboYarpFakePointCloud::Load period is"
-		<< m_period;
-    } else {
-	yError() << "GazeboYarpFakePointCloud::Load error:"
-	         << "failure in loading parameter 'period' for model"
-		 << m_modelName;
-	return;
-    }
-
-    // Load observer origin
-    if (_sdf->HasElement("observerOrigin")) {
-	ignition::math::Vector3d origin_ign = _sdf->Get<ignition::math::Vector3d>("observerOrigin");
-	
-	yarp::sig::Vector origin(3, 0.0);
-	for (size_t i=0; i<3; i++)
-	    origin[i] = origin_ign[i];
-	
-	// Set observer origin within the sampler
-	m_sampler.SetObserverOrigin(origin);
-
-	yInfo() << "GazeboYarpFakePointCloud::Load observer origin is"
-		<< origin.toString();
-    } else {
-	yError() << "GazeboYarpFakePointCloud::Load error:"
-	         << "failure in loading parameter 'observerOrigin' for model"
-		 << m_modelName;
-	return;
-    }
 
     // Load number of points of the point cloud
-    if (_sdf->HasElement("numPoints")) {
-	// Set number of points
-	m_nPoints = _sdf->Get<int>("numPoints");
-
-	yInfo() << "GazeboYarpFakePointCloud::Load number of points is"
-		<< m_nPoints;
-    } else {
-	yError() << "GazeboYarpFakePointCloud::Load error:"
-	         << "failure in loading parameter 'numPoints' for model"
-		 << m_modelName;
+    if (!LoadStrictPositiveScalarParam<int>("numPoints", m_nPoints))
 	return;
-    }
-
-    // Load mesh path
-    if (_sdf->HasElement("meshPath")) {
-	std::string mesh_name = _sdf->Get<std::string>("meshPath");
-
-	// Check for empty strings
-	if (mesh_name.empty()) {
-	    yError() << "GazeboYarpFakePointCloud::Load error:"
-		     << "parameter 'meshPath' evaluated to an empty string for model name"
-		     << m_modelName;
-	    return;
-	}
-
-	// Extract path
-        std::string mesh_path = gazebo::common::SystemPaths::Instance()->FindFileURI(mesh_name);
-	
-	// Load object model within the sampler
-	if (m_sampler.LoadObjectModel(mesh_path)) {
-	    yInfo() << "GazeboYarpFakePointCloud::Load model"
-		    << mesh_path
-		    << "loaded for model"
-		    << m_modelName;
-	} else {
-	    yError() << "GazeboYarpFakePointCloud::Load error:"
-		     << "cannot load mesh for model"
-		     << m_modelName;
-	}
-	
-    } else {
-	yError() << "GazeboYarpFakePointCloud::Load error:"
-	         << "failure in loading parameter 'meshPath' for model"
-		 << m_modelName;
-	return;
-    }
 
     // Load showPointCloud flag
-    if (_sdf->HasElement("showPointCloud"))
-	m_showPointCloud = _sdf->Get<bool>("showPointCloud");
-    else
-	// default to false
-	m_showPointCloud = false;
+    if (!LoadParam<bool>("showPointCloud", m_showPointCloud))
+	return;
 
-    // Clear last update time
-    m_lastUpdateTime = gazebo::common::Time(0.0);
+    // Load outputPortSuffix suffix
+    std::string outputPortSuffix;
+    if (!LoadParam<std::string>("outputPortSuffix", outputPortSuffix))
+	return;
+    
+    // Load observer origin
+    yarp::sig::Vector observerOrigin;
+    if (!LoadObserverOrigin(observerOrigin))
+	return;
+    
+    // Configure observer origin
+    m_sampler.SetObserverOrigin(observerOrigin);
 
-    // Set the default colour of the visualization markers
-    // TODO: take from SDF configuration
+    // Configure mesh
+    if (!ConfigureMesh())
+	return;
+
+    // Configure the point cloud viewer part
     if (m_showPointCloud)
 #if GAZEBO_MAJOR_VERSION >= 8
-    {	
+    {
+	// Get the desired colour for the point cloud
+	std::string colour;
+
+	if (!LoadParam<std::string>("pointCloudColour", colour))
+	    return;
+	
 	// Set default colour
-	m_viewer.setDefaultColour("Gazebo/RedTransparent");
+	// m_viewer.setDefaultColour("Gazebo/RedTransparent");
+	m_viewer.setDefaultColour(colour);	
 
 	// Set the namespace
 	m_viewer.setNamespace(m_modelName);
     }
 #else
-    yWarning() << "GazeboYarpFakePointCloud::Load warning:"
-	       << "showPointCloud option requires minimum"
-	       << "version 8 of Gazebo (model)"
-	       << m_modelName;
+    yWarning() << "FakePointCloud::Load"
+	       << "showPointCloud feature requires minimum"
+	       << "version 8 of Gazebo (warning for model"
+	       << m_modelName << ")";
 #endif
-	
 
+    // Clear last update time
+    m_lastUpdateTime = gazebo::common::Time(0.0);
+	
+    // Open port
+    // Using the model name provided by gazebo enforces uniqueness of port name
+    // in case a model is inserted in the environment more than once
+    std::string port_name = "/" + m_modelName + "/" + outputPortSuffix;
+    bool isPortOpen = m_portOut.open(port_name);
+    if (!isPortOpen) {
+	yError() << "FakePointCloud::Load error:"
+	         << "cannot open output port for model"
+		 << m_modelName;
+	return;
+    }
 
     // Listen to the update event
     auto worldUpdateBind = boost::bind(&GazeboYarpFakePointCloud::OnWorldUpdate, this);
@@ -265,6 +244,41 @@ void GazeboYarpFakePointCloud::OnWorldUpdate()
 	}
 #endif
     }
+}
+
+void GazeboYarpFakePointCloud::SamplePointCloud(PointCloud &pc)
+{
+    // Get the current pose of the canonical link of the model
+#if GAZEBO_MAJOR_VERSION >= 8
+    ignition::math::Pose3d curPose = m_model->GetLink()->WorldPose();
+#else
+    gazebo::math::Pose curPoseGazebo = m_model->GetLink()->GetWorldPose();
+    // Convert to Ignition so that the same interface
+    // can be used in the rest of the function
+    ignition::math::Pose3d curPose = curPoseGazebo.Ign();
+#endif
+
+    // Get the positional and rotational parts
+    ignition::math::Vector3d pos = curPose.Pos();
+    ignition::math::Quaterniond rot = curPose.Rot();
+    
+    // Fill yarp-like quantities
+    yarp::sig::Vector position;
+    yarp::math::Quaternion attitude;
+	
+    position.push_back(pos.X());
+    position.push_back(pos.Y());
+    position.push_back(pos.Z());
+
+    attitude = yarp::math::Quaternion(rot.X(),
+				      rot.Y(),
+				      rot.Z(),
+				      rot.W());
+    // Set current pose
+    m_sampler.SetPose(position, attitude);
+    
+    // Sample the point cloud
+    m_sampler.SamplePointCloud(m_nPoints, pc);
 }
     
 }
