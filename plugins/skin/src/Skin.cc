@@ -48,7 +48,10 @@ GazeboYarpSkin::~GazeboYarpSkin()
     // Close the port
     m_portSkin.close();
     
-    // Close the driver
+    // Close the drivers
+    m_drvEncArm.close();
+    m_drvEncTorso.close();
+    m_drvTransformClient.close();
 }
 
 void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
