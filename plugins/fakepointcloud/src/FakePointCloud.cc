@@ -194,11 +194,21 @@ void FakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
 	return;
     }
 
+    // Listen to the reset event
+    auto worldResetBind = boost::bind(&FakePointCloud::OnWorldReset, this);
+    m_worldResetConnection = gazebo::event::Events::ConnectWorldReset(worldResetBind);
+
     // Listen to the update event
     auto worldUpdateBind = boost::bind(&FakePointCloud::OnWorldUpdate, this);
     m_worldUpdateConnection = gazebo::event::Events::ConnectWorldUpdateBegin(worldUpdateBind);
 }
 
+void FakePointCloud::OnWorldReset()
+{
+    // Reset the time
+    m_lastUpdateTime = gazebo::common::Time(0.0);
+}
+    
 void FakePointCloud::OnWorldUpdate()
 {    
     // Get current time
