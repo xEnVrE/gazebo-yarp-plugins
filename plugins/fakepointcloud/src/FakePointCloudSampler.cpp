@@ -30,8 +30,25 @@ typedef vcg::Point3<simpleTriMesh::ScalarType> vcgVector;
 // VCG transformation
 typedef vcg::tri::UpdatePosition<simpleTriMesh> transformTriMesh;
 
+// VCG face
+typedef simpleTriMesh::FaceIterator FaceIterator;
+
 // VCG vertex
 typedef simpleTriMesh::VertexIterator  VertexIterator;
+
+// VCG allocator
+typedef vcg::tri::Allocator<simpleTriMesh> simpleTriMeshAllocator;
+
+FakePointCloudSampler::FakePointCloudSampler(): m_position(3, 0.0) , m_rndGen(m_rndDev())
+{
+    // disable noise as default
+    m_noiseEnabled = false;
+	
+    // configure the gaussian random rumber generator
+    // with default values
+    std::normal_distribution<>::param_type params(0.0, 0.01);
+    m_gaussianGen.param(params);
+};
 
 bool FakePointCloudSampler::LoadObjectModel(const std::string &file_path)
 {
@@ -106,6 +123,36 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
     // transform the model using the current pose set
     simpleTriMesh mesh_cp;
     TransformModel(mesh_cp);
+
+    // perform back-face culling
+    yarp::sig::Vector normal(3, 0.0);
+    yarp::sig::Vector vertex0(3, 0.0);
+    for (FaceIterator fi = mesh_cp.face.begin();
+	 fi != mesh_cp.face.end();
+	 fi++)
+    {
+	// extract face normal
+	const auto n = fi->cN();
+	normal[0] = n[0];
+	normal[1] = n[1];
+	normal[2] = n[2];
+
+	// extract position of first vertex of the face
+	const auto v = fi->cP(0);
+	vertex0[0] = v[0];
+	vertex0[1] = v[1];
+	vertex0[2] = v[2];
+	
+	// eval vector from view point to first vertex
+	yarp::sig::Vector diff = vertex0 - m_observer;
+	
+	// perform culling check
+	if (yarp::math::dot(diff, normal) >= 0)
+	    // remove face
+	    simpleTriMeshAllocator::DeleteFace(mesh_cp, *fi);
+    }
+    // perform face garbage collection after culling
+    simpleTriMeshAllocator::CompactFaceVector(mesh_cp);
     
     // perform Disk Poisson Sampling
 
@@ -163,30 +210,32 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
 	point[1] = p[1];
 	point[2] = p[2];
 
-	// extract the associated normal
-	const auto n = vi->cN();
-	yarp::sig::Vector normal(3, 0.0);
-	normal[0] = n[0];
-	normal[1] = n[1];
-	normal[2] = n[2];
-
-	// eval vector from observer to point
-	yarp::sig::Vector diff = point - m_observer;
-
-	// evaluate angle between diff and
-	// the normal at the point considered
-	double angle = acos(yarp::math::dot(diff, normal) /
-	                    yarp::math::norm(diff) /
-	                    yarp::math::norm(normal));
-	
-	// take the point if the angle is greater than 100 degrees
-	if(angle > 100 * (M_PI/180.0)) {
-	    PointCloudItem item;
-	    
-	    item.x = point[0];
-	    item.y = point[1];
-	    item.z = point[2];	    
-	    cloud.push_back(item);
+	// add noise if required
+	if (m_noiseEnabled)
+	{
+	    point[0] += m_gaussianGen(m_rndGen);
+	    point[1] += m_gaussianGen(m_rndGen);
+	    point[2] += m_gaussianGen(m_rndGen);	    
 	}
+
+	// store it in the cloud
+	PointCloudItem item;
+	    
+	item.x = point[0];
+	item.y = point[1];
+	item.z = point[2];
+	    
+	cloud.push_back(item);
     }
+}
+
+void FakePointCloudSampler::setGaussianNoiseParameters(const double &mean, const double &std)
+{
+    std::normal_distribution<>::param_type params(mean, std);
+    m_gaussianGen.param(params);
+}
+
+void FakePointCloudSampler::setGaussianNoiseEnabled(const bool &enabled)
+{
+    m_noiseEnabled = enabled;
 }

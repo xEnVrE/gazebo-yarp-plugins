@@ -138,6 +138,28 @@ void FakePointCloud::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
     if (!LoadParam<bool>("showPointCloud", m_showPointCloud))
 	return;
 
+    // Load enableNoise
+    bool noiseEnabled;
+    if (!LoadParam<bool>("enableNoise", noiseEnabled))
+	return;
+
+    if (noiseEnabled)
+    {
+	// Load mean and standard deviation for gaussian noise
+	double mean;
+	double std;
+	if (!LoadParam<double>("noiseMean", mean))
+	    return;
+	if (!LoadParam<double>("noiseStd", std))
+	    return;
+
+	// Configure noise generator within sampler
+	m_sampler.setGaussianNoiseParameters(mean, std);
+
+	// Enable noise
+	m_sampler.setGaussianNoiseEnabled(true);
+    }
+
     // Load outputPortSuffix suffix
     std::string outputPortSuffix;
     if (!LoadParam<std::string>("outputPortSuffix", outputPortSuffix))
