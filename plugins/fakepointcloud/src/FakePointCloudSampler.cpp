@@ -39,6 +39,17 @@ typedef simpleTriMesh::VertexIterator  VertexIterator;
 // VCG allocator
 typedef vcg::tri::Allocator<simpleTriMesh> simpleTriMeshAllocator;
 
+FakePointCloudSampler::FakePointCloudSampler(): m_position(3, 0.0) , m_rndGen(m_rndDev())
+{
+    // disable noise as default
+    m_noiseEnabled = false;
+	
+    // configure the gaussian random rumber generator
+    // with default values
+    std::normal_distribution<>::param_type params(0.0, 0.01);
+    m_gaussianGen.param(params);
+};
+
 bool FakePointCloudSampler::LoadObjectModel(const std::string &file_path)
 {
     int outcome;
@@ -199,6 +210,14 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
 	point[1] = p[1];
 	point[2] = p[2];
 
+	// add noise if required
+	if (m_noiseEnabled)
+	{
+	    point[0] += m_gaussianGen(m_rndGen);
+	    point[1] += m_gaussianGen(m_rndGen);
+	    point[2] += m_gaussianGen(m_rndGen);	    
+	}
+
 	// store it in the cloud
 	PointCloudItem item;
 	    
@@ -208,4 +227,15 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
 	    
 	cloud.push_back(item);
     }
+}
+
+void FakePointCloudSampler::setGaussianNoiseParameters(const double &mean, const double &std)
+{
+    std::normal_distribution<>::param_type params(mean, std);
+    m_gaussianGen.param(params);
+}
+
+void FakePointCloudSampler::setGaussianNoiseEnabled(const bool &enabled)
+{
+    m_noiseEnabled = enabled;
 }

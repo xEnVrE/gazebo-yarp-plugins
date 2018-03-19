@@ -17,6 +17,9 @@
 #include <yarp/sig/all.h>
 #include <yarp/math/Math.h>
 
+// std
+#include <random>
+
 //
 #include "PointCloud.h"
 
@@ -61,7 +64,7 @@ public:
     /*
      * Constructor.
      */
-    FakePointCloudSampler() : m_position(3, 0.0) { };
+    FakePointCloudSampler();
     
     /*
      * Load the model of the object as a triangular mesh
@@ -106,6 +109,21 @@ public:
      */
     void SamplePointCloud(const int &n_points,
 			  PointCloud &cloud);
+    /*
+     * Set mean and standard deviation for the internal
+     * gaussian random number generator.
+     *
+     * @param mean the mean of the distribution
+     * @param std the standard deviation of the distribution
+     */
+    void setGaussianNoiseParameters(const double &mean, const double &std);
+
+    /*
+     * Enable/disable noise on the point cloud.
+     *
+     * @param enabled whether the noise is enabled or disabled
+     */
+    void setGaussianNoiseEnabled(const bool &enabled);
 private:
     // triangular mesh object
     simpleTriMesh m_mesh;
@@ -118,6 +136,12 @@ private:
 
     // origin of the observer looking at the object
     yarp::sig::Vector m_observer;
+
+    // gaussian noise generator
+    std::random_device m_rndDev;
+    std::mt19937 m_rndGen;
+    std::normal_distribution<> m_gaussianGen;
+    bool m_noiseEnabled;
 };
 
 #endif
