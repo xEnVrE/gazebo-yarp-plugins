@@ -43,6 +43,8 @@ GZ_REGISTER_MODEL_PLUGIN(gazebo::GazeboYarpSkin)
 
 namespace gazebo {
 
+GazeboYarpSkin::GazeboYarpSkin() : m_rndGen(m_rndDev()) {}
+
 GazeboYarpSkin::~GazeboYarpSkin()
 {
     // Close the port
@@ -50,37 +52,6 @@ GazeboYarpSkin::~GazeboYarpSkin()
     
     // Close the drivers
     m_drvTransformClient.close();
-}
-
-bool GazeboYarpSkin::LoadStringParam(const std::string &name,
-				     std::string &value)
-{
-    // Check if the element exists
-    if (!(m_sdf->HasElement(name))) {
-	yError() << "GazeboYarpSkin::Load error:"
-		 << "cannot find parameter"
-		 << name
-		 << "for the"
-		 << m_whichHand
-		 << "hand";
-	return false;
-    }
-
-    // Get the associated parameter
-    sdf::ParamPtr paramPtr = m_sdf->GetElement(name)->GetValue();
-
-    // Check if the value can be interpreted as a string
-    if (!paramPtr->Get<std::string>(value)) {
-	yError() << "GazeboYarpSkin::Load error:"
-		 << "parameter"
-		 << name
-		 << "for the"
-		 << m_whichHand
-		 << "hand should be a valid string";
-	return false;
-    }
-
-    return true;
 }
 
 void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
@@ -116,24 +87,43 @@ void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
     m_whichHand = whichHandValue.asString();
 
     // Get robot name from the SDF
-    if (!LoadStringParam("robotName", m_robotName))
+    if (!LoadParam<std::string>("robotName", m_robotName))
 	return;
 
     // Get source frame name required to retrieve the pose of the robot
-    if (!LoadStringParam("robotSourceFrameName", m_robotSourceFrameName))
+    if (!LoadParam<std::string>("robotSourceFrameName", m_robotSourceFrameName))
 	return;
 
     // Get target frame name required to retrieve the pose of the robot
-    if (!LoadStringParam("robotTargeFrameName", m_robotTargetFrameName))
+    if (!LoadParam<std::string>("robotTargeFrameName", m_robotTargetFrameName))
 	return;
 
     // Get name of the local port used to instantiate FrameTransformClient driver
-    if (!LoadStringParam("transformClientLocalPort", m_transformClientLocalPort))
+    if (!LoadParam<std::string>("transformClientLocalPort", m_transformClientLocalPort))
 	return;
 
     // Get the output port name
-    if (!LoadStringParam("outputPortName", m_outputPortName))
+    if (!LoadParam<std::string>("outputPortName", m_outputPortName))
 	return;
+
+    // Get the noiseEnabled flag
+    if (!LoadParam<bool>("enableNoise", m_noiseEnabled))
+	return;
+
+    // Configure gaussian random generator if required
+    if (m_noiseEnabled) {
+	// Load mean and standard deviation for gaussian noise
+	double mean;
+	double std;
+	if (!LoadParam<double>("noiseMean", mean))
+	    return;
+	if (!LoadParam<double>("noiseStd", std))
+	    return;
+
+	// Configure the gaussian random rumber generator
+	std::normal_distribution<>::param_type params(mean, std);
+	m_gaussianGen.param(params);
+    }
 
     // Prepare properties for the FrameTransformClient
     yarp::os::Property propTfClient;
@@ -431,6 +421,13 @@ void GazeboYarpSkin::OnWorldUpdate()
 		diffVector[0] = diffPos.X();
 		diffVector[1] = diffPos.Y();
 		diffVector[2] = diffPos.Z();
+
+		// Add noise if required
+		if (m_noiseEnabled) {
+		    diffVector[0] += m_gaussianGen(m_rndGen);
+		    diffVector[1] += m_gaussianGen(m_rndGen);
+		    diffVector[2] += m_gaussianGen(m_rndGen);
+		}
 
 		iCub::skinDynLib::dynContact dynContact(sensor.bodyPart,
 							static_cast<int>(sensor.linkNumber),
