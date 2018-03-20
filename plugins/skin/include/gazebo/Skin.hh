@@ -64,6 +64,11 @@ namespace gazebo
     class GazeboYarpSkin : public ModelPlugin
     {
     public:
+	/**
+	 * Constructor.
+	 */
+	GazeboYarpSkin();
+
 	~GazeboYarpSkin();
 	
 	/**
@@ -97,6 +102,14 @@ namespace gazebo
 	 * Pointer to the IFrameTransform view
 	 */
 	yarp::dev::IFrameTransform *m_tfClient;
+
+	/**
+	 * Gaussian noise generator
+	 */
+	std::random_device m_rndDev;
+	std::mt19937 m_rndGen;
+	std::normal_distribution<> m_gaussianGen;
+	bool m_noiseEnabled;
 
 	/**
 	 * Indicates whether the transform from /inertial

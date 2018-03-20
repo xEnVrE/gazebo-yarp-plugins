@@ -43,6 +43,8 @@ GZ_REGISTER_MODEL_PLUGIN(gazebo::GazeboYarpSkin)
 
 namespace gazebo {
 
+GazeboYarpSkin::GazeboYarpSkin() : m_rndGen(m_rndDev()) {}
+
 GazeboYarpSkin::~GazeboYarpSkin()
 {
     // Close the port
@@ -104,6 +106,25 @@ void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
     // Get the output port name
     if (!LoadParam<std::string>("outputPortName", m_outputPortName))
 	return;
+
+    // Get the noiseEnabled flag
+    if (!LoadParam<bool>("enableNoise", m_noiseEnabled))
+	return;
+
+    // Configure gaussian random generator if required
+    if (m_noiseEnabled) {
+	// Load mean and standard deviation for gaussian noise
+	double mean;
+	double std;
+	if (!LoadParam<double>("noiseMean", mean))
+	    return;
+	if (!LoadParam<double>("noiseStd", std))
+	    return;
+
+	// Configure the gaussian random rumber generator
+	std::normal_distribution<>::param_type params(mean, std);
+	m_gaussianGen.param(params);
+    }
 
     // Prepare properties for the FrameTransformClient
     yarp::os::Property propTfClient;
@@ -401,6 +422,13 @@ void GazeboYarpSkin::OnWorldUpdate()
 		diffVector[0] = diffPos.X();
 		diffVector[1] = diffPos.Y();
 		diffVector[2] = diffPos.Z();
+
+		// Add noise if required
+		if (m_noiseEnabled) {
+		    diffVector[0] += m_gaussianGen(m_rndGen);
+		    diffVector[1] += m_gaussianGen(m_rndGen);
+		    diffVector[2] += m_gaussianGen(m_rndGen);
+		}
 
 		iCub::skinDynLib::dynContact dynContact(sensor.bodyPart,
 							static_cast<int>(sensor.linkNumber),
