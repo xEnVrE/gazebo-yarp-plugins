@@ -178,11 +178,11 @@ namespace gazebo
 	std::string m_outputPortName;
 
 	/**
-	 * Load a string parameter from the SDF
-	 *
+	 * Load a parameter from the SDF.
 	 */
-	bool LoadStringParam(const std::string &name,
-					     std::string &value);
+	template<typename T>
+	bool LoadParam(const std::string &name, T &param);
+
 	/*
 	 * Retrieve the pose of the robot root frame that is published
 	 * in the FrameTransformServer.
@@ -212,5 +212,41 @@ namespace gazebo
 	 */	
 	void OnWorldUpdate();
     };
+}
+
+namespace gazebo
+{
+    template<typename T>
+    bool GazeboYarpSkin::LoadParam(const std::string &name,
+				   T &param)
+    {
+	// Check if the element exists
+	if (!(m_sdf->HasElement(name))) {
+	    yError() << "GazeboYarpSkin::Load error:"
+		     << "cannot find parameter"
+		     << name
+		     << "for the"
+		     << m_whichHand
+		     << "hand";
+	    return false;
+	}
+
+	// Get the associated parameter
+	sdf::ParamPtr paramPtr = m_sdf->GetElement(name)->GetValue();
+
+	// Check if the value can be interpreted
+	// as the required type
+	if (!paramPtr->Get<T>(param)) {
+	    yError() << "GazeboYarpSkin::Load error:"
+		     << "parameter"
+		     << name
+		     << "for the"
+		     << m_whichHand
+		     << "hand";
+	    return false;
+	}
+
+	return true;
+    }
 }
 #endif

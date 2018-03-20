@@ -54,37 +54,6 @@ GazeboYarpSkin::~GazeboYarpSkin()
     m_drvTransformClient.close();
 }
 
-bool GazeboYarpSkin::LoadStringParam(const std::string &name,
-				     std::string &value)
-{
-    // Check if the element exists
-    if (!(m_sdf->HasElement(name))) {
-	yError() << "GazeboYarpSkin::Load error:"
-		 << "cannot find parameter"
-		 << name
-		 << "for the"
-		 << m_whichHand
-		 << "hand";
-	return false;
-    }
-
-    // Get the associated parameter
-    sdf::ParamPtr paramPtr = m_sdf->GetElement(name)->GetValue();
-
-    // Check if the value can be interpreted as a string
-    if (!paramPtr->Get<std::string>(value)) {
-	yError() << "GazeboYarpSkin::Load error:"
-		 << "parameter"
-		 << name
-		 << "for the"
-		 << m_whichHand
-		 << "hand should be a valid string";
-	return false;
-    }
-
-    return true;
-}
-
 void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
     // Store pointer to the model
@@ -118,19 +87,22 @@ void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
     m_whichHand = whichHandValue.asString();
 
     // Get robot name from the SDF
-    if (!LoadStringParam("robotName", m_robotName))
+    if (!LoadParam<std::string>("robotName", m_robotName))
 	return;
 
     // Get source frame name required to retrieve the pose of the robot
-    if (!LoadStringParam("robotSourceFrameName", m_robotSourceFrameName))
+    if (!LoadParam<std::string>("robotSourceFrameName", m_robotSourceFrameName))
 	return;
 
     // Get target frame name required to retrieve the pose of the robot
-    if (!LoadStringParam("robotTargeFrameName", m_robotTargetFrameName))
+    if (!LoadParam<std::string>("robotTargeFrameName", m_robotTargetFrameName))
+	return;
+
+    if (!LoadParam<std::string>("transformClientLocalPort", m_transformClientLocalPort))
 	return;
 
     // Get the output port name
-    if (!LoadStringParam("outputPortName", m_outputPortName))
+    if (!LoadParam<std::string>("outputPortName", m_outputPortName))
 	return;
 
     // Prepare properties for the FrameTransformClient
