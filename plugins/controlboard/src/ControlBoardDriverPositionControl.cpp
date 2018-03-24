@@ -33,8 +33,9 @@ bool GazeboYarpControlBoardDriver::stop(int j) //WORKS
         }
         else if  (m_controlMode[j]==VOCAB_CM_VELOCITY)
         {
-            m_jntReferenceVelocities[j]=0;
-            m_speed_ramp_handler[j]->stop();
+	    m_velocity_integral_generator[j]->setReferenceVelocity(0.0);
+            // m_jntReferenceVelocities[j]=0;
+            // m_speed_ramp_handler[j]->stop();
         }
         else if  (m_controlMode[j]==VOCAB_CM_MIXED)
         {
