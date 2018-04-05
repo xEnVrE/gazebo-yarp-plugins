@@ -38,4 +38,4 @@ add_subdirectory(fakepointcloud)
 add_subdirectory(fakepointcloudviewer)
 add_subdirectory(estimateviewer)
 add_subdirectory(skin)
-
+add_subdirectory(modelreset)
