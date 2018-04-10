@@ -139,7 +139,12 @@ bool GazeboYarpModelReset::processRequest(const yarp::os::Bottle &request,
 
 	// write response
 	response.addString("Pose of model " + m_model->GetName() +
-			   "was reset.");
+			   " was reset.");
+    }
+    else
+    {
+	// write response
+	response.addString("Command not recognized.");
     }
 
     return true;
