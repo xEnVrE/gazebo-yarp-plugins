@@ -66,7 +66,7 @@ namespace gazebo
 	/**
 	 * Process incoming rpc requests
 	 */
-	bool processRequest(const yarp::os::Bottle &request,
+	void processRequest(const yarp::os::Bottle &request,
 			    yarp::os::Bottle &response);
 
 	/**
