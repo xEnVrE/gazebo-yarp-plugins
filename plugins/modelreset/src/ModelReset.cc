@@ -83,9 +83,7 @@ bool GazeboYarpModelReset::read(yarp::os::ConnectionReader& connection)
 
     // Process request
     yarp::os::Bottle response;
-    ok = processRequest(request, response);
-    if (!ok)
-	return false;
+    processRequest(request, response);
 
     // Sends the response back
     yarp::os::ConnectionWriter* toSender = connection.getWriter();
@@ -102,22 +100,35 @@ bool GazeboYarpModelReset::read(yarp::os::ConnectionReader& connection)
     return true;
 }
 
-bool GazeboYarpModelReset::processRequest(const yarp::os::Bottle &request,
+void GazeboYarpModelReset::processRequest(const yarp::os::Bottle &request,
 					  yarp::os::Bottle &response)
 {
     // Check for empty or invalid requests
     yarp::os::Value requestValue = request.get(0);
+    std::string error_text;
     if (requestValue.isNull())
     {
+	error_text = "An empty rpc request was received and ignored!";
+
 	yWarning() << "GazeboYarpModelReset::processRequest"
-		   << "Warning: an empty rpc request was received and ignored!";
-	return false;
+		   << "Warning:"
+		   << error_text;
+
+	response.addString(error_text);
+
+	return;
     }
     else if (!requestValue.isString())
     {
+	error_text = "An invalid rpc request was received and ignored!";
+
 	yWarning() << "GazeboYarpModelReset::processRequest"
-		   << "Warning: an invalid rpc request was received and ignored!";
-	return false;
+		   << "Warning:"
+		   << error_text;
+
+	response.addString(error_text);
+
+	return;
     }
 
     // Extract the string
@@ -146,8 +157,6 @@ bool GazeboYarpModelReset::processRequest(const yarp::os::Bottle &request,
 	// write response
 	response.addString("Command not recognized.");
     }
-
-    return true;
 }
 
 void GazeboYarpModelReset::resetModelPose()
