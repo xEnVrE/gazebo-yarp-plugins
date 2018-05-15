@@ -102,7 +102,7 @@ void EstimateViewer::Load(gazebo::rendering::VisualPtr _parent, sdf::ElementPtr 
     // It is used to access a IFrameTransformServer where
     // the estimated pose of the object is published
     yarp::os::Property propTfClient;
-    propTfClient.put("device", "transformClient");
+    propTfClient.put("device", "FrameTransformClient");
     // The local port depends on the model name that is unique
     // also in the case of multiple insertions of the same model
     // in Gazebo
