@@ -69,7 +69,7 @@ void GazeboYarpModelPosePublisher::Load(gazebo::physics::ModelPtr _parent, sdf::
 
     // Prepare properties for the PolyDriver
     yarp::os::Property propTfClient;    
-    propTfClient.put("device", "transformClient");
+    propTfClient.put("device", "FrameTransformClient");
     // The local port depends on the model name that is unique
     // also in the case of multiple insertions of the same model
     // in Gazebo
