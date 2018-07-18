@@ -177,6 +177,11 @@ void VelocityIntegralGenerator::setReferenceVelocity(const double &velocity)
     m_mutex.post();
 }
 
+void VelocityIntegralGenerator::getReferenceVelocity(double &vel)
+{
+    vel = m_currentReferenceVelocity;
+}
+
 double VelocityIntegralGenerator::computeTrajectory()
 {
     m_mutex.wait();

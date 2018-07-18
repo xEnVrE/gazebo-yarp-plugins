@@ -87,6 +87,7 @@ public:
     bool abortTrajectory(double limit);
     void setInitialPosition(const double &);
     void setReferenceVelocity(const double &);
+    void getReferenceVelocity(double &vel);
     yarp::dev::TrajectoryType getTrajectoryType();    
     double computeTrajectory();
     double computeTrajectoryStep();
