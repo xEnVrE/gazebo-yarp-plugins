@@ -62,7 +62,8 @@ bool GazeboYarpControlBoardDriver::getRefVelocity(const int joint, double *vel)
 {
     if (vel && joint >= 0 && static_cast<size_t>(joint) < m_numberOfJoints)
     {
-        *vel = m_jntReferenceVelocities[joint];
+        // *vel = m_jntReferenceVelocities[joint];
+        m_velocity_integral_generator[joint]->getReferenceVelocity(*vel);
         return true;
     }
     return false;
