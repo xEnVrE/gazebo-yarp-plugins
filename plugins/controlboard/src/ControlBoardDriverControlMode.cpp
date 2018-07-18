@@ -119,6 +119,11 @@ bool GazeboYarpControlBoardDriver::changeControlMode(const int j, const int mode
 {
     int desired_mode = mode;
 
+    // override MIXED mode with VELOCITY mode
+    // since MIXED mode is not working with eyes vergence and version for now
+    if (desired_mode == VOCAB_CM_MIXED)
+        desired_mode = VOCAB_CM_VELOCITY;
+
     //if joint is in hw fault, only a force idle command can recover it
     if (m_controlMode[j] == VOCAB_CM_HW_FAULT && mode != VOCAB_CM_FORCE_IDLE)
     {
