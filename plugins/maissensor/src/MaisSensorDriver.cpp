@@ -56,7 +56,7 @@ bool GazeboYarpMaisSensorDriver::gazebo_init()
 
     if (!setJointNames()) return false;      // this function also fills in the m_jointPointers vector
 
-    m_channels_num = 16;
+    m_channels_num = 15;
     m_numberOfJoints = m_jointNames.size();
 
     m_positions.resize(m_numberOfJoints);
@@ -136,7 +136,7 @@ void GazeboYarpMaisSensorDriver::onUpdate(const gazebo::common::UpdateInfo& _inf
 #else
         double gazeboPos = m_jointPointers[jnt_cnt]->GetAngle(0).Radian();
 #endif
-        m_positions[jnt_cnt] = convertGazeboToUser(jnt_cnt, gazeboPos);
+        m_positions[jnt_cnt] = (1 - convertGazeboToUser(jnt_cnt, gazeboPos) / 90.0) * 255.0;
     }
 
     // Updating timestamp
