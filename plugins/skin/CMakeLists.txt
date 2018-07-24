@@ -16,6 +16,7 @@ endif()
 
 # required for iCub-main libraries
 find_package(ICUB)
+find_package(YARP COMPONENTS gsl)
 list(APPEND CMAKE_MODULE_PATH ${ICUB_MODULE_PATH})
 
 add_gazebo_yarp_plugin_target(LIBRARY_NAME skin
