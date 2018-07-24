@@ -58,6 +58,7 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     m_numberOfJoints = m_jointNames.size();
 
     m_positions.resize(m_numberOfJoints);
+    m_positions_coupled.resize(m_numberOfJoints);    
     m_motPositions.resize(m_numberOfJoints);
     m_zeroPosition.resize(m_numberOfJoints);
     m_jntReferenceVelocities.resize(m_numberOfJoints);
@@ -68,6 +69,8 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     m_trajectoryGenerationReferenceSpeed.resize(m_numberOfJoints);
     m_jntReferencePositions.resize(m_numberOfJoints);
     m_motReferencePositions.resize(m_numberOfJoints);
+    m_jntReferenceIPositions.resize(m_numberOfJoints);
+    m_motReferenceIPositions.resize(m_numberOfJoints);
     m_motReferenceVelocities.resize(m_numberOfJoints);
     m_motReferenceTorques.resize(m_numberOfJoints);
     m_oldReferencePositions.resize(m_numberOfJoints);
@@ -97,14 +100,17 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
 
     // Initial zeroing of all vectors
     m_positions.zero();
+    m_positions_coupled.zero();
     m_motPositions.zero();
     m_zeroPosition.zero();
     m_velocities.zero();
     m_motReferencePositions.zero();
+    m_motReferenceIPositions.zero();    
     m_motReferenceVelocities.zero();
     m_motReferenceTorques.zero();
     m_trajectoryGenerationReferenceSpeed.zero();
     m_jntReferencePositions.zero();
+    m_jntReferenceIPositions.zero();    
     m_jntReferenceVelocities.zero();
     m_jntReferenceTorques.zero();
     m_trajectoryGenerationReferencePosition.zero();
@@ -121,6 +127,7 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     m_trajectory_generator.resize(m_numberOfJoints, NULL);
     m_coupling_handler.clear();
     m_speed_ramp_handler.resize(m_numberOfJoints, NULL);
+    m_velocity_integral_generator.resize(m_numberOfJoints, NULL);
     m_velocity_watchdog.resize(m_numberOfJoints, NULL);
 
     VectorOf<int> trajectory_generator_type;
@@ -168,8 +175,14 @@ bool GazeboYarpControlBoardDriver::gazebo_init()
     for (size_t j = 0; j < m_numberOfJoints; ++j)
     {
         m_speed_ramp_handler[j] = new RampFilter();
+	
         m_velocity_watchdog[j] = new Watchdog(0.200); //watchdog set to 200ms
     }
+
+    for (size_t j = 0; j < m_numberOfJoints; ++j)
+    {
+	m_velocity_integral_generator[j] = new VelocityIntegralGenerator(m_robot);
+    }	
 
     yarp::os::Bottle& coupling_group_bottle = m_pluginParameters.findGroup("COUPLING");
     if (!coupling_group_bottle.isNull())
@@ -364,7 +377,8 @@ void GazeboYarpControlBoardDriver::resetPositionsAndTrajectoryGenerators()
             initial_config[counter-1] = tmp;
             m_trajectoryGenerationReferencePosition[counter - 1] = convertGazeboToUser(counter-1, tmp);
             m_jntReferencePositions[counter - 1] = convertGazeboToUser(counter-1, tmp);
-            m_positions[counter - 1] = convertGazeboToUser(counter-1, tmp);
+	    m_jntReferenceIPositions[counter - 1] = m_jntReferencePositions[counter - 1];
+            m_positions_coupled[counter -1 ] = m_positions[counter - 1] = convertGazeboToUser(counter-1, tmp);
             counter++;
         }
         yDebug()<<"INITIAL CONFIGURATION IS: "<<initial_config.toString();
@@ -378,6 +392,11 @@ void GazeboYarpControlBoardDriver::resetPositionsAndTrajectoryGenerators()
         for (unsigned int i = 0; i < m_numberOfJoints; ++i) {
             m_trajectory_generator[i]->setLimits(m_jointPosLimits[i].min,m_jointPosLimits[i].max);
             m_trajectory_generator[i]->initTrajectory(m_positions[i],m_positions[i],m_trajectoryGenerationReferenceSpeed[i]);
+	    
+	    m_velocity_integral_generator[i]->setLimits(m_jointPosLimits[i].min,m_jointPosLimits[i].max);
+	    m_velocity_integral_generator[i]->setVelocityLimit(m_jointVelLimits[i].max);
+	    m_velocity_integral_generator[i]->setInitialPosition(m_positions[i]);
+	    m_velocity_integral_generator[i]->initTrajectory(m_positions[i],m_positions[i],0.0);
         }
     }
     else
@@ -390,9 +409,14 @@ void GazeboYarpControlBoardDriver::resetPositionsAndTrajectoryGenerators()
 #else
             double gazeboPos = m_jointPointers[i]->GetAngle(0).Radian();
 #endif
-            m_positions[i] = convertGazeboToUser(i, gazeboPos);
+            m_positions_coupled[i] = m_positions[i] = convertGazeboToUser(i, gazeboPos);
             m_trajectory_generator[i]->setLimits(m_jointPosLimits[i].min,m_jointPosLimits[i].max);
             m_trajectory_generator[i]->initTrajectory(m_positions[i],m_positions[i],m_trajectoryGenerationReferenceSpeed[i]);
+
+	    m_velocity_integral_generator[i]->setLimits(m_jointPosLimits[i].min,m_jointPosLimits[i].max);
+	    m_velocity_integral_generator[i]->setVelocityLimit(m_jointVelLimits[i].max);
+	    m_velocity_integral_generator[i]->setInitialPosition(m_positions[i]);
+	    m_velocity_integral_generator[i]->initTrajectory(m_positions[i],m_positions[i],0.0);
         }
     }
 
@@ -466,7 +490,7 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
 #endif
         m_positions[jnt_cnt] = convertGazeboToUser(jnt_cnt, gazeboPos);
         m_velocities[jnt_cnt] = convertGazeboToUser(jnt_cnt, m_jointPointers[jnt_cnt]->GetVelocity(0));
-        m_torques[jnt_cnt] = m_jointPointers[jnt_cnt]->GetForce(0u);
+        m_torques[jnt_cnt] = m_jointPointers[jnt_cnt]->GetForce(0);
     }
 
     m_motPositions=m_positions;
@@ -481,7 +505,8 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
             m_coupling_handler[cpl_cnt]->decoupleTrq(m_torques);
         }
     }
-
+    m_positions_coupled = m_positions;
+    
     // check measured torque for hw fault
     for (size_t jnt_cnt = 0; jnt_cnt < m_jointPointers.size(); jnt_cnt++) {
         if (m_controlMode[jnt_cnt]!=VOCAB_CM_HW_FAULT && fabs(m_torques[jnt_cnt])>m_maxTorques[jnt_cnt])
@@ -495,18 +520,18 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
     m_lastTimestamp.update(_info.simTime.Double());
 
     //update refernce m_jntReferenceVelocities
-    for (size_t j = 0; j < m_numberOfJoints; ++j)
-    {
-        if (m_speed_ramp_handler[j])
-        {
-            if (m_velocity_watchdog[j]->isExpired())
-            {
-                m_speed_ramp_handler[j]->stop();
-            }
-            m_speed_ramp_handler[j]->update();
-            //yDebug() << m_speed_ramp_handler[j]->getCurrentValue();
-        }
-    }
+    // for (size_t j = 0; j < m_numberOfJoints; ++j)
+    // {
+    //     if (m_speed_ramp_handler[j])
+    //     {
+    //         if (m_velocity_watchdog[j]->isExpired())
+    //         {
+    //             m_speed_ramp_handler[j]->stop();
+    //         }
+    //         m_speed_ramp_handler[j]->update();
+    //         //yDebug() << m_speed_ramp_handler[j]->getCurrentValue();
+    //     }
+    // }
 
     //update Trajectories
     for (size_t j = 0; j < m_numberOfJoints; ++j)
@@ -534,13 +559,16 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
         {
             if (m_clock % _T_controller == 0)
             {
-                if (m_speed_ramp_handler[j]) m_jntReferenceVelocities[j] = m_speed_ramp_handler[j]->getCurrentValue();
+                // if (m_speed_ramp_handler[j]) m_jntReferenceVelocities[j] = m_speed_ramp_handler[j]->getCurrentValue();
+		if (m_velocity_integral_generator[j])
+		    m_jntReferenceIPositions[j] = m_velocity_integral_generator[j]->computeTrajectory();
             }
         }
     }
 
     //references decoupling
     m_motReferencePositions=m_jntReferencePositions;
+    m_motReferenceIPositions=m_jntReferenceIPositions;    
     m_motReferenceVelocities=m_jntReferenceVelocities;
     m_motReferenceTorques=m_jntReferenceTorques;
     for (size_t cpl_cnt = 0; cpl_cnt < m_coupling_handler.size(); cpl_cnt++)
@@ -548,6 +576,7 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
         if (m_coupling_handler[cpl_cnt])
         {
             m_motReferencePositions = m_coupling_handler[cpl_cnt]->decoupleRefPos(m_jntReferencePositions);
+            m_motReferenceIPositions = m_coupling_handler[cpl_cnt]->decoupleRefPos(m_jntReferenceIPositions);	    
             m_motReferenceVelocities = m_coupling_handler[cpl_cnt]->decoupleRefVel(m_jntReferenceVelocities);
             m_motReferenceTorques = m_coupling_handler[cpl_cnt]->decoupleRefTrq(m_jntReferenceTorques);
         }
@@ -571,12 +600,14 @@ void GazeboYarpControlBoardDriver::onUpdate(const gazebo::common::UpdateInfo& _i
         else if ((m_controlMode[j] == VOCAB_CM_VELOCITY) && (m_interactionMode[j] == VOCAB_IM_STIFF))
         {
             gazebo::common::PID &pid = m_pids[VOCAB_PIDTYPE_VELOCITY][j];
-            forceReference = pid.Update(convertUserToGazebo(j, m_velocities[j]) - convertUserToGazebo(j, m_motReferenceVelocities[j]), stepTime);
+	    forceReference = pid.Update(convertUserToGazebo(j, m_motPositions[j]) - convertUserToGazebo(j, m_motReferenceIPositions[j]), stepTime);	    
+            // forceReference = pid.Update(convertUserToGazebo(j, m_velocities[j]) - convertUserToGazebo(j, m_motReferenceVelocities[j]), stepTime);
         }
         else if ((m_controlMode[j] == VOCAB_CM_VELOCITY) && (m_interactionMode[j] == VOCAB_IM_COMPLIANT))
         {
             gazebo::common::PID &pid = m_pids[VOCAB_PIDTYPE_VELOCITY][j];
-            forceReference = pid.Update(convertUserToGazebo(j, m_velocities[j]) - convertUserToGazebo(j, m_motReferenceVelocities[j]), stepTime);
+            forceReference = pid.Update(convertUserToGazebo(j, m_motPositions[j]) - convertUserToGazebo(j, m_motReferenceIPositions[j]), stepTime);
+            // forceReference = pid.Update(convertUserToGazebo(j, m_velocities[j]) - convertUserToGazebo(j, m_motReferenceVelocities[j]), stepTime);
             yWarning("Compliant velocity control not yet implemented");
         }
         else if ((m_controlMode[j] == VOCAB_CM_MIXED) && (m_interactionMode[j] == VOCAB_IM_STIFF))

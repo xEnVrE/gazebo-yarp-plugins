@@ -91,6 +91,11 @@ bool GazeboYarpControlBoardDriver::changeControlMode(const int j, const int mode
 {
     int desired_mode = mode;
 
+    // override MIXED mode with VELOCITY mode
+    // since MIXED mode is not working with eyes vergence and version for now
+    if (desired_mode == VOCAB_CM_MIXED)
+        desired_mode = VOCAB_CM_VELOCITY;
+
     //if joint is in hw fault, only a force idle command can recover it
     if (m_controlMode[j] == VOCAB_CM_HW_FAULT && mode != VOCAB_CM_FORCE_IDLE)
     {
@@ -113,18 +118,20 @@ bool GazeboYarpControlBoardDriver::changeControlMode(const int j, const int mode
     // mode specific switching actions
     switch (desired_mode) {
         case VOCAB_CM_POSITION :
-            m_jntReferencePositions[j] = m_positions[j];
-            m_trajectoryGenerationReferencePosition[j] = m_positions[j];
+            m_jntReferencePositions[j] = m_positions_coupled[j];
+            m_trajectoryGenerationReferencePosition[j] = m_positions_coupled[j];
             m_trajectory_generator[j]->setLimits(m_jointPosLimits[j].min,m_jointPosLimits[j].max);
-            m_trajectory_generator[j]->initTrajectory(m_positions[j],m_trajectoryGenerationReferencePosition[j],m_trajectoryGenerationReferenceSpeed[j]);
+            m_trajectory_generator[j]->initTrajectory(m_positions_coupled[j],m_trajectoryGenerationReferencePosition[j],m_trajectoryGenerationReferenceSpeed[j]);
             break;
         case VOCAB_CM_POSITION_DIRECT :
-            m_jntReferencePositions[j] = m_positions[j];
-            m_trajectoryGenerationReferencePosition[j] = m_positions[j];
+            m_jntReferencePositions[j] = m_positions_coupled[j];
+            m_trajectoryGenerationReferencePosition[j] = m_positions_coupled[j];
             break;
         case VOCAB_CM_VELOCITY :
-            m_jntReferenceVelocities[j] = 0.0;
-            m_speed_ramp_handler[j]->stop();
+	    m_velocity_integral_generator[j]->setReferenceVelocity(0.0);
+	    m_velocity_integral_generator[j]->setInitialPosition(m_positions_coupled[j]);
+            // m_jntReferenceVelocities[j] = 0.0;
+            // m_speed_ramp_handler[j]->stop();
             break;
         case VOCAB_CM_MIXED:
             m_jntReferencePositions[j] = m_positions[j];
