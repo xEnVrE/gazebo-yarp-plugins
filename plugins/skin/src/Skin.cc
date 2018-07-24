@@ -126,7 +126,7 @@ void GazeboYarpSkin::Load(gazebo::physics::ModelPtr _parent, sdf::ElementPtr _sd
 
     // Prepare properties for the FrameTransformClient
     yarp::os::Property propTfClient;
-    propTfClient.put("device", "FrameTransformClient");
+    propTfClient.put("device", "transformClient");
     propTfClient.put("local", m_transformClientLocalPort);
     propTfClient.put("remote", "/transformServer");
 	
