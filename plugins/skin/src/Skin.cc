@@ -51,8 +51,6 @@ GazeboYarpSkin::~GazeboYarpSkin()
     m_portSkin.close();
     
     // Close the drivers
-    m_drvEncArm.close();
-    m_drvEncTorso.close();
     m_drvTransformClient.close();
 }
 
