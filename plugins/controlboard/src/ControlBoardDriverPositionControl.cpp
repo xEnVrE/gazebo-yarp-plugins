@@ -223,8 +223,11 @@ bool GazeboYarpControlBoardDriver::checkMotionDone(const int n_joint, const int 
 {
     if (!joints || !flags) return false;
     bool ret = true;
+    *flags = true;
     for (int i = 0; i < n_joint && ret; i++) {
-        ret = checkMotionDone(joints[i], &flags[i]);
+	bool done;
+        ret = checkMotionDone(joints[i], &done);
+	(*flags) &= done;
     }
     return ret;
 }
