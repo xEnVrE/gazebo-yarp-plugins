@@ -247,7 +247,7 @@ void FakePointCloud::OnWorldUpdate()
 	m_lastUpdateTime = currentTime;
 
 	// Sample point cloud
-	PointCloud &cloud = m_portOut.prepare();
+	PointCloudXYZ &cloud = m_portOut.prepare();
 	SamplePointCloud(cloud);
 
 	// Deliver the point cloud
@@ -261,9 +261,9 @@ void FakePointCloud::OnWorldUpdate()
 	    std::vector<ignition::math::Vector3d> cloud_ign;
 	    for (size_t i=0; i<cloud.size(); i++)
 	    {
-		ignition::math::Vector3d point(cloud[i].x,
-					       cloud[i].y,
-					       cloud[i].z);					   
+		ignition::math::Vector3d point(cloud(i).x,
+					       cloud(i).y,
+					       cloud(i).z);
 		cloud_ign.push_back(point);
 	    }
 	    if(!m_viewer.showPointCloud(cloud_ign)) {
@@ -278,7 +278,7 @@ void FakePointCloud::OnWorldUpdate()
     }
 }
 
-void FakePointCloud::SamplePointCloud(PointCloud &pc)
+void FakePointCloud::SamplePointCloud(PointCloudXYZ &pc)
 {
     // Get the current pose of the canonical link of the model
 #if GAZEBO_MAJOR_VERSION >= 8

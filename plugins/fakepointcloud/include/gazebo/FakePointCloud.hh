@@ -65,7 +65,7 @@ namespace gazebo
 	/**
 	 * Port where to send point clouds
 	 */
-	yarp::os::BufferedPort<PointCloud> m_portOut;
+	yarp::os::BufferedPort<PointCloudXYZ> m_portOut;
 
 	/**
 	 * Pointer to the model where the plugin is inserted
@@ -155,7 +155,7 @@ namespace gazebo
 	/**
 	 * Sample a point cloud and send it to a port
 	 */	
-	void SamplePointCloud(PointCloud&);
+	void SamplePointCloud(PointCloudXYZ&);
     };
 }
 
