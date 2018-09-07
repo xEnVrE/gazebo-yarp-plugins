@@ -118,7 +118,7 @@ void FakePointCloudSampler::TransformModel(simpleTriMesh &transformed)
 }
 
 void FakePointCloudSampler::SamplePointCloud(const int &n_points,
-					     PointCloud &cloud)
+					     PointCloudXYZ &cloud)
 {
     // transform the model using the current pose set
     simpleTriMesh mesh_cp;
@@ -219,12 +219,12 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
 	}
 
 	// store it in the cloud
-	PointCloudItem item;
-	    
+        yarp::sig::DataXYZ item;
+
 	item.x = point[0];
 	item.y = point[1];
 	item.z = point[2];
-	    
+
 	cloud.push_back(item);
     }
 }

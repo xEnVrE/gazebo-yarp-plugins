@@ -16,12 +16,14 @@
 // yarp
 #include <yarp/sig/all.h>
 #include <yarp/math/Math.h>
+#include <yarp/sig/PointCloud.h>
 
 // std
 #include <random>
 
 //
-#include "PointCloud.h"
+//#include "PointCloud.h"
+typedef yarp::sig::PointCloud<yarp::sig::DataXYZ> PointCloudXYZ;
 
 class vertex;
 class edge;
@@ -108,7 +110,7 @@ public:
      * @param cloud a PointCloud cloud
      */
     void SamplePointCloud(const int &n_points,
-			  PointCloud &cloud);
+			  PointCloudXYZ &cloud);
     /*
      * Set mean and standard deviation for the internal
      * gaussian random number generator.
