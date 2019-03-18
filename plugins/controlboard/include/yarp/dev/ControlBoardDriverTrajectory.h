@@ -14,8 +14,7 @@ namespace yarp {
         enum TrajectoryType
         {
             TRAJECTORY_TYPE_CONST_SPEED = 0,
-            TRAJECTORY_TYPE_MIN_JERK = 1,
-            TRAJECTORY_TYPE_VEL_INTEGRAL = 2	    
+            TRAJECTORY_TYPE_MIN_JERK = 1
         };
     }
 }
@@ -60,10 +59,9 @@ protected:
     double m_xf;
     double m_speed;
     double m_computed_reference;
-    unsigned int m_controllerPeriod;
+    double m_controllerPeriod;
     double m_joint_min;
     double m_joint_max;
-    double m_joint_vel_max;
     TrajectoryGenerator(gazebo::physics::Model* model);
 
 public:
@@ -74,27 +72,7 @@ public:
     virtual double computeTrajectoryStep() = 0;
     virtual yarp::dev::TrajectoryType getTrajectoryType() = 0;
     bool setLimits(double min, double max);
-    bool setVelocityLimit(double max);
     bool isMotionDone();
-};
-
-class VelocityIntegralGenerator: public TrajectoryGenerator
-{
-public:
-    VelocityIntegralGenerator(gazebo::physics::Model* model);
-    virtual ~VelocityIntegralGenerator();
-    bool initTrajectory (double current_pos, double final_pos, double speed);
-    bool abortTrajectory(double limit);
-    void setInitialPosition(const double &);
-    void setReferenceVelocity(const double &);
-    void getReferenceVelocity(double &vel);
-    yarp::dev::TrajectoryType getTrajectoryType();    
-    double computeTrajectory();
-    double computeTrajectoryStep();
-
-private:
-    double m_currentReferenceVelocity;
-    double m_currentReferencePosition;
 };
 
 class ConstSpeedTrajectoryGenerator: public TrajectoryGenerator

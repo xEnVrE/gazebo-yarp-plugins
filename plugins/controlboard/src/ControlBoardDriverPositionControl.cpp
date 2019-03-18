@@ -16,7 +16,7 @@ bool GazeboYarpControlBoardDriver::positionMove(int j, double ref) //WORKS
     {
         m_trajectoryGenerationReferencePosition[j] = ref; //we will use this m_trajectoryGenerationReferencePosition in the next simulation onUpdate call to ask gazebo to set PIDs m_trajectoryGenerationReferencePosition to this value
         m_trajectory_generator[j]->setLimits(m_jointPosLimits[j].min,m_jointPosLimits[j].max);
-        m_trajectory_generator[j]->initTrajectory (m_positions_coupled[j], m_trajectoryGenerationReferencePosition[j], m_trajectoryGenerationReferenceSpeed[j]);
+        m_trajectory_generator[j]->initTrajectory (m_positions[j], m_trajectoryGenerationReferencePosition[j], m_trajectoryGenerationReferenceSpeed[j]);
         return true;
     }
     return false;
@@ -28,26 +28,25 @@ bool GazeboYarpControlBoardDriver::stop(int j) //WORKS
     {
         if (m_controlMode[j]==VOCAB_CM_POSITION)
         {
-            m_trajectoryGenerationReferencePosition[j] = m_positions_coupled[j];
-            m_trajectory_generator[j]->abortTrajectory(m_positions_coupled[j]);
+            m_trajectoryGenerationReferencePosition[j] = m_positions[j];
+            m_trajectory_generator[j]->abortTrajectory(m_positions[j]);
         }
         else if  (m_controlMode[j]==VOCAB_CM_VELOCITY)
         {
-	    m_velocity_integral_generator[j]->setReferenceVelocity(0.0);
-            // m_jntReferenceVelocities[j]=0;
-            // m_speed_ramp_handler[j]->stop();
+            m_jntReferenceVelocities[j]=0;
+            m_speed_ramp_handler[j]->stop();
         }
         else if  (m_controlMode[j]==VOCAB_CM_MIXED)
         {
-            m_trajectoryGenerationReferencePosition[j] = m_positions_coupled[j];
-            m_trajectory_generator[j]->abortTrajectory(m_positions_coupled[j]);
+            m_trajectoryGenerationReferencePosition[j] = m_positions[j];
+            m_trajectory_generator[j]->abortTrajectory(m_positions[j]);
             m_jntReferenceVelocities[j]=0;
             m_speed_ramp_handler[j]->stop();
         }
         else if  (m_controlMode[j]==VOCAB_CM_POSITION_DIRECT)
         {
-            m_trajectoryGenerationReferencePosition[j] = m_positions_coupled[j];
-            m_jntReferencePositions[j] = m_positions_coupled[j];
+            m_trajectoryGenerationReferencePosition[j] = m_positions[j];
+            m_jntReferencePositions[j] = m_positions[j];
         }
         else
         {
@@ -115,7 +114,7 @@ bool GazeboYarpControlBoardDriver::getRefSpeeds(double *spds) //WORKS
 bool GazeboYarpControlBoardDriver::relativeMove(int j, double delta) //NOT TESTED
 {
     if (j >= 0 && static_cast<size_t>(j) < m_numberOfJoints) {
-        m_trajectoryGenerationReferencePosition[j] = m_positions_coupled[j] + delta; //TODO check if this is ok or m_trajectoryGenerationReferencePosition=m_trajectoryGenerationReferencePosition+delta!!!
+        m_trajectoryGenerationReferencePosition[j] = m_positions[j] + delta; //TODO check if this is ok or m_trajectoryGenerationReferencePosition=m_trajectoryGenerationReferencePosition+delta!!!
         return true;
     }
     return false;
@@ -219,15 +218,15 @@ bool GazeboYarpControlBoardDriver::relativeMove(const int n_joint, const int *jo
     return ret;
 }
 
-bool GazeboYarpControlBoardDriver::checkMotionDone(const int n_joint, const int *joints, bool *flags)
+bool GazeboYarpControlBoardDriver::checkMotionDone(const int n_joint, const int *joints, bool *flag)
 {
-    if (!joints || !flags) return false;
+    if (!joints || !flag) return false;
     bool ret = true;
-    *flags = true;
+    *flag = true;
     for (int i = 0; i < n_joint && ret; i++) {
-	bool done;
+        bool done;
         ret = checkMotionDone(joints[i], &done);
-	(*flags) &= done;
+        (*flag) &= done;
     }
     return ret;
 }

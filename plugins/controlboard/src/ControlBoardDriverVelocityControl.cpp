@@ -15,15 +15,13 @@ bool GazeboYarpControlBoardDriver::velocityMove(int j, double sp) //NOT TESTED
 {
     if (j >= 0 && static_cast<size_t>(j) < m_numberOfJoints)
     {
-        // m_jntReferenceVelocities[j] = sp;
-        // m_velocity_watchdog[j]->reset();
-        // if (m_speed_ramp_handler[j])
-        // {
-        //     m_speed_ramp_handler[j]->setReference(m_jntReferenceVelocities[j], m_trajectoryGenerationReferenceAcceleration[j]);
-        // }
-        // return true;
-	m_velocity_integral_generator[j]->setReferenceVelocity(sp);
-	return true;
+        m_jntReferenceVelocities[j] = sp;
+        m_velocity_watchdog[j]->reset();
+        if (m_speed_ramp_handler[j])
+        {
+            m_speed_ramp_handler[j]->setReference(m_jntReferenceVelocities[j], m_trajectoryGenerationReferenceAcceleration[j]);
+        }
+        return true;
     }
     return false;
 }
@@ -53,8 +51,7 @@ bool GazeboYarpControlBoardDriver::getRefVelocity(const int joint, double *vel)
 {
     if (vel && joint >= 0 && static_cast<size_t>(joint) < m_numberOfJoints)
     {
-        // *vel = m_jntReferenceVelocities[joint];
-        m_velocity_integral_generator[joint]->getReferenceVelocity(*vel);
+        *vel = m_jntReferenceVelocities[joint];
         return true;
     }
     return false;

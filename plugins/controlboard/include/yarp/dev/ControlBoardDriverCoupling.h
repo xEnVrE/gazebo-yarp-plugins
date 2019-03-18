@@ -9,8 +9,6 @@
 
 #include <gazebo/physics/Model.hh>
 
-#include <ControlBoardDriverRange.h>
-
 namespace yarp {
     namespace dev {
         enum CouplingType
@@ -38,8 +36,6 @@ public:
     virtual bool decoupleAcc(yarp::sig::Vector& current_acc) = 0;
     virtual bool decoupleTrq(yarp::sig::Vector& current_trq) = 0;
 
-    virtual bool decouplePosLimits(std::vector<Range> &pos_limits) = 0;    
-
     virtual yarp::sig::VectorOf<int> getCoupledJoints();
     virtual std::string getCoupledJointName (int joint);
     virtual bool checkJointIsCoupled(int joint);
@@ -61,8 +57,6 @@ public:
     bool decoupleAcc (yarp::sig::Vector& current_acc);
     bool decoupleTrq (yarp::sig::Vector& current_trq);
 
-    bool decouplePosLimits(std::vector<Range> &pos_limits);
-
     yarp::sig::Vector decoupleRefPos (yarp::sig::Vector& pos_ref);
     yarp::sig::Vector decoupleRefVel (yarp::sig::Vector& vel_ref);
     yarp::sig::Vector decoupleRefTrq (yarp::sig::Vector& trq_ref);
@@ -79,8 +73,6 @@ public:
     bool decoupleVel (yarp::sig::Vector& current_vel);
     bool decoupleAcc (yarp::sig::Vector& current_acc);
     bool decoupleTrq (yarp::sig::Vector& current_trq);
-
-    bool decouplePosLimits(std::vector<Range> &pos_limits);
 
     yarp::sig::Vector decoupleRefPos (yarp::sig::Vector& pos_ref);
     yarp::sig::Vector decoupleRefVel (yarp::sig::Vector& vel_ref);
@@ -99,8 +91,6 @@ public:
     bool decoupleAcc (yarp::sig::Vector& current_acc);
     bool decoupleTrq (yarp::sig::Vector& current_trq);
 
-    bool decouplePosLimits(std::vector<Range> &pos_limits);    
-
     yarp::sig::Vector decoupleRefPos (yarp::sig::Vector& pos_ref);
     yarp::sig::Vector decoupleRefVel (yarp::sig::Vector& vel_ref);
     yarp::sig::Vector decoupleRefTrq (yarp::sig::Vector& trq_ref);
@@ -117,8 +107,6 @@ public:
     bool decoupleVel (yarp::sig::Vector& current_vel);
     bool decoupleAcc (yarp::sig::Vector& current_acc);
     bool decoupleTrq (yarp::sig::Vector& current_trq);
-
-    bool decouplePosLimits(std::vector<Range> &pos_limits);    
 
     yarp::sig::Vector decoupleRefPos (yarp::sig::Vector& pos_ref);
     yarp::sig::Vector decoupleRefVel (yarp::sig::Vector& vel_ref);
@@ -137,8 +125,6 @@ public:
     bool decoupleAcc (yarp::sig::Vector& current_acc);
     bool decoupleTrq (yarp::sig::Vector& current_trq);
 
-    bool decouplePosLimits(std::vector<Range> &pos_limits);    
-
     yarp::sig::Vector decoupleRefPos (yarp::sig::Vector& pos_ref);
     yarp::sig::Vector decoupleRefVel (yarp::sig::Vector& vel_ref);
     yarp::sig::Vector decoupleRefTrq (yarp::sig::Vector& trq_ref);
@@ -156,8 +142,6 @@ public:
     bool decoupleAcc (yarp::sig::Vector& current_acc);
     bool decoupleTrq (yarp::sig::Vector& current_trq);
 
-    bool decouplePosLimits(std::vector<Range> &pos_limits);    
-
     yarp::sig::Vector decoupleRefPos (yarp::sig::Vector& pos_ref);
     yarp::sig::Vector decoupleRefVel (yarp::sig::Vector& vel_ref);
     yarp::sig::Vector decoupleRefTrq (yarp::sig::Vector& trq_ref);
@@ -174,8 +158,6 @@ public:
     bool decoupleVel (yarp::sig::Vector& current_vel);
     bool decoupleAcc (yarp::sig::Vector& current_acc);
     bool decoupleTrq (yarp::sig::Vector& current_trq);
-
-    bool decouplePosLimits(std::vector<Range> &pos_limits);    
 
     yarp::sig::Vector decoupleRefPos (yarp::sig::Vector& pos_ref);
     yarp::sig::Vector decoupleRefVel (yarp::sig::Vector& vel_ref);

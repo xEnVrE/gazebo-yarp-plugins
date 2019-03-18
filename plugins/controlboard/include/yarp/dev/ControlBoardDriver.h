@@ -26,7 +26,6 @@
 #include <boost/shared_ptr.hpp>
 #include <ControlBoardDriverTrajectory.h>
 #include <ControlBoardDriverCoupling.h>
-#include <ControlBoardDriverRange.h>
 
 #include <gazebo/common/PID.hh>
 #include <gazebo/common/Time.hh>
@@ -342,6 +341,12 @@ private:
         JointType_Prismatic
     };
 
+    struct Range {
+        Range() : min(0), max(0){}
+        double min;
+        double max;
+    };
+
     std::string m_deviceName;
     gazebo::physics::Model* m_robot;
 
@@ -371,7 +376,6 @@ private:
     yarp::sig::Vector m_zeroPosition;
 
     yarp::sig::Vector m_positions;          /**< joint positions [Degrees] */
-    yarp::sig::Vector m_positions_coupled;  /**< joint positions coupled [Degrees] */
     yarp::sig::Vector m_motPositions;      /**< motor positions [Degrees] */
     yarp::sig::Vector m_velocities;         /**< joint velocities [Degrees/Seconds] */
     yarp::sig::Vector m_torques;            /**< joint torques [Netwon Meters] */
@@ -388,10 +392,8 @@ private:
                                                  they can be set directly or indirectly
                                                  through the trajectory generator.
                                                  [Degrees] */
-    yarp::sig::Vector m_jntReferenceIPositions;  // Positions due to integral of velocity
 
     yarp::sig::Vector m_motReferencePositions;   //after calling decouple decoupleRefPos this is the reference which is sent to the PID
-    yarp::sig::Vector m_motReferenceIPositions;   //after calling decouple decoupleRefPos this is the reference which is sent to the PID
     yarp::sig::Vector m_motReferenceVelocities;  //after calling decouple decoupleRefVel this is the reference which is sent to the PID
     yarp::sig::Vector m_motReferenceTorques;     //after calling decouple decoupleRefTrq this is the reference which is sent to the PID
 
@@ -403,7 +405,6 @@ private:
 
     //trajectory generator
     std::vector<TrajectoryGenerator*> m_trajectory_generator;
-    std::vector<VelocityIntegralGenerator*> m_velocity_integral_generator;    
     std::vector<BaseCouplingHandler*>  m_coupling_handler;
     std::vector<RampFilter*> m_speed_ramp_handler;
     std::vector<Watchdog*> m_velocity_watchdog;
