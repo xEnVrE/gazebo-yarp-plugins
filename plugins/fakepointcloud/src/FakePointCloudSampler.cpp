@@ -43,7 +43,7 @@ FakePointCloudSampler::FakePointCloudSampler(): m_position(3, 0.0) , m_rndGen(m_
 {
     // disable noise as default
     m_noiseEnabled = false;
-	
+
     // configure the gaussian random rumber generator
     // with default values
     std::normal_distribution<>::param_type params(0.0, 0.01);
@@ -55,7 +55,7 @@ bool FakePointCloudSampler::LoadObjectModel(const std::string &file_path)
     int outcome;
     outcome = simpleTriMeshImporter::Open(m_mesh, file_path.c_str());
 
-    if(outcome != OFFImportErrors::NoError) {	
+    if(outcome != OFFImportErrors::NoError) {
 	yError() << "FakePointCloudSampler::LoadObjectModel error: Error while importing .OFF file" << file_path;
 
 	return false;
@@ -70,11 +70,11 @@ bool FakePointCloudSampler::LoadObjectModel(const std::string &file_path)
 
     // update vertex normals
     if(m_mesh.vn>0)
-	vcg::tri::UpdateNormal<simpleTriMesh>::PerVertex(m_mesh);        
+	vcg::tri::UpdateNormal<simpleTriMesh>::PerVertex(m_mesh);
 
     return true;
 }
-    
+
 void FakePointCloudSampler::SetPose(const yarp::sig::Vector &position,
 				    const yarp::math::Quaternion &attitude)
 {
@@ -113,7 +113,7 @@ void FakePointCloudSampler::TransformModel(simpleTriMesh &transformed)
     // order of the matrix product is important here (do not change)
     vcgHomMatrix H = Htransl * Hrot;
 
-    // apply rototranslation to the mesh    
+    // apply rototranslation to the mesh
     transformTriMesh::Matrix(transformed, H, true);
 }
 
@@ -142,10 +142,10 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
 	vertex0[0] = v[0];
 	vertex0[1] = v[1];
 	vertex0[2] = v[2];
-	
+
 	// eval vector from view point to first vertex
 	yarp::sig::Vector diff = vertex0 - m_observer;
-	
+
 	// perform culling check
 	if (yarp::math::dot(diff, normal) >= 0)
 	    // remove face
@@ -153,14 +153,15 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
     }
     // perform face garbage collection after culling
     simpleTriMeshAllocator::CompactFaceVector(mesh_cp);
-    
+
     // perform Disk Poisson Sampling
+
 
     // since this functions returns only points visible
     // to the observer, whose origin is stored in m_observer,
     // a greater number of points, n_points_eff, is sampled
     int n_points_eff = n_points * 2 + 25;
-    
+
     // some default parametrs as found in MeshLab
     int oversampling = 20;
     triMeshSurfSampler::PoissonDiskParam poiss_params;
@@ -168,7 +169,7 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
     poiss_params.geodesicDistanceFlag=false;
     poiss_params.bestSampleChoiceFlag=true;
     poiss_params.bestSamplePoolSize=10;
-    
+
     // estimate radius required to obtain disk poisson sampling
     // with the n_points_eff points
     simpleTriMesh::ScalarType radius;
@@ -198,7 +199,7 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
     // clear the cloud
     cloud.clear();
 
-    // store up to n_points vertices in the cloud	
+    // store up to n_points vertices in the cloud
     for (VertexIterator vi = poiss_mesh.vert.begin();
 	 cloud.size() < n_points && vi != poiss_mesh.vert.end();
 	 vi++)
@@ -215,7 +216,7 @@ void FakePointCloudSampler::SamplePointCloud(const int &n_points,
 	{
 	    point[0] += m_gaussianGen(m_rndGen);
 	    point[1] += m_gaussianGen(m_rndGen);
-	    point[2] += m_gaussianGen(m_rndGen);	    
+	    point[2] += m_gaussianGen(m_rndGen);
 	}
 
 	// store it in the cloud
