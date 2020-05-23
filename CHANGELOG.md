@@ -6,6 +6,11 @@ The format of this document is based on [Keep a Changelog](https://keepachangelo
 
 ## [Unreleased]
 
+## [3.4.1] - 2020-05-23
+
+### Fixed
+- Fixed wrong measurements feedback used for coupled joints in `gazebo_yarp_controlboard`(https://github.com/robotology/gazebo-yarp-plugins/pull/492).
+
 ## [3.4.0] - 2020-05-19
 
 ### Added
