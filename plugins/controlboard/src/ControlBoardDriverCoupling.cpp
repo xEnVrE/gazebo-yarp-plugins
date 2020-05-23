@@ -77,27 +77,27 @@ EyesCouplingHandler::EyesCouplingHandler(gazebo::physics::Model* model, yarp::si
 bool EyesCouplingHandler::decouplePos (yarp::sig::Vector& current_pos)
 {
     if (m_coupledJoints.size() != m_couplingSize) return false;
-    double temp = current_pos[m_coupledJoints[0]];
-    current_pos[m_coupledJoints[0]] = temp + current_pos[m_coupledJoints[1]];
-    current_pos[m_coupledJoints[1]] = temp - current_pos[m_coupledJoints[1]];
+    double left_pan = current_pos[m_coupledJoints[0]];
+    current_pos[m_coupledJoints[0]] = (left_pan + current_pos[m_coupledJoints[1]])/2;
+    current_pos[m_coupledJoints[1]] = left_pan - current_pos[m_coupledJoints[1]];
     return true;
 }
 
 bool EyesCouplingHandler::decoupleVel (yarp::sig::Vector& current_vel)
 {
     if (m_coupledJoints.size() != m_couplingSize) return false;
-    double temp = current_vel[m_coupledJoints[0]];
-    current_vel[m_coupledJoints[0]] = temp + current_vel[m_coupledJoints[1]];
-    current_vel[m_coupledJoints[1]] = temp - current_vel[m_coupledJoints[1]];
+    double left_pan = current_vel[m_coupledJoints[0]];
+    current_vel[m_coupledJoints[0]] = (left_pan + current_vel[m_coupledJoints[1]])/2;
+    current_vel[m_coupledJoints[1]] = left_pan - current_vel[m_coupledJoints[1]];
     return true;
 }
 
 bool EyesCouplingHandler::decoupleAcc (yarp::sig::Vector& current_acc)
 {
     if (m_coupledJoints.size() != m_couplingSize) return false;
-    double temp = current_acc[m_coupledJoints[0]];
-    current_acc[m_coupledJoints[0]] = temp + current_acc[m_coupledJoints[1]];
-    current_acc[m_coupledJoints[1]] = temp - current_acc[m_coupledJoints[1]];
+    double left_pan = current_acc[m_coupledJoints[0]];
+    current_acc[m_coupledJoints[0]] = (left_pan + current_acc[m_coupledJoints[1]])/2;
+    current_acc[m_coupledJoints[1]] = left_pan - current_acc[m_coupledJoints[1]];
     return true;
 }
 
@@ -109,6 +109,14 @@ bool EyesCouplingHandler::decoupleTrq (yarp::sig::Vector& current_trq)
 
 bool EyesCouplingHandler::decouplePosLimits (std::vector<Range>& pos_limits) // NOT IMPLEMENTED
 {
+    if (m_coupledJoints.size() != m_couplingSize) return false;
+    /* Limits for eyes version. */
+    pos_limits[m_coupledJoints[0]].min = -30.0;
+    pos_limits[m_coupledJoints[0]].max = 30.0;
+
+    /* Limits for eyes vergence. */
+    pos_limits[m_coupledJoints[1]].min = 0.0;
+    pos_limits[m_coupledJoints[1]].max = 50.0;
     return false;
 }
 
@@ -116,8 +124,8 @@ yarp::sig::Vector EyesCouplingHandler::decoupleRefPos (yarp::sig::Vector& pos_re
 {
     yarp::sig::Vector out = pos_ref;
     if (m_coupledJoints.size() != m_couplingSize) {yError() << "EyesCouplingHandler: Invalid coupling vector"; return out;}
-    out[m_coupledJoints[0]] = (pos_ref[m_coupledJoints[0]] + pos_ref[m_coupledJoints[1]])/2;
-    out[m_coupledJoints[1]] = (pos_ref[m_coupledJoints[0]] - pos_ref[m_coupledJoints[1]])/2;
+    out[m_coupledJoints[0]] = pos_ref[m_coupledJoints[0]] + pos_ref[m_coupledJoints[1]]/2;
+    out[m_coupledJoints[1]] = pos_ref[m_coupledJoints[0]] - pos_ref[m_coupledJoints[1]]/2;
     return out;
 }
 
@@ -125,8 +133,8 @@ yarp::sig::Vector EyesCouplingHandler::decoupleRefVel (yarp::sig::Vector& vel_re
 {
     yarp::sig::Vector out = vel_ref;
     if (m_coupledJoints.size() != m_couplingSize) {yError() << "EyesCouplingHandler: Invalid coupling vector"; return out;}
-    out[m_coupledJoints[0]] = (vel_ref[m_coupledJoints[0]] + vel_ref[m_coupledJoints[1]])/2;
-    out[m_coupledJoints[1]] = (vel_ref[m_coupledJoints[0]] - vel_ref[m_coupledJoints[1]])/2;
+    out[m_coupledJoints[0]] = vel_ref[m_coupledJoints[0]] + vel_ref[m_coupledJoints[1]]/2;
+    out[m_coupledJoints[1]] = vel_ref[m_coupledJoints[0]] - vel_ref[m_coupledJoints[1]]/2;
     return out;
 }
 
@@ -134,8 +142,8 @@ yarp::sig::Vector EyesCouplingHandler::decoupleRefTrq (yarp::sig::Vector& trq_re
 {
     yarp::sig::Vector out = trq_ref;
     if (m_coupledJoints.size() != m_couplingSize) {yError() << "EyesCouplingHandler: Invalid coupling vector"; return out;}
-    out[m_coupledJoints[0]] = (trq_ref[m_coupledJoints[0]] + trq_ref[m_coupledJoints[1]])/2;
-    out[m_coupledJoints[1]] = (trq_ref[m_coupledJoints[0]] - trq_ref[m_coupledJoints[1]])/2;
+    out[m_coupledJoints[0]] = trq_ref[m_coupledJoints[0]] + trq_ref[m_coupledJoints[1]]/2;
+    out[m_coupledJoints[1]] = trq_ref[m_coupledJoints[0]] - trq_ref[m_coupledJoints[1]]/2;
     return out;
 }
 
