@@ -19,8 +19,11 @@
 namespace gazebo
 {
     /// \class GazeboYarpModelPosePublisher
-    /// Gazebo Plugin that publishes the pose of the root link
+    /// Gazebo Plugin that publishes the pose of one link
     /// of a model with respect to the Gazebo world frame.
+    ///
+    /// The specific link can be specified using the optional parameter `linkName`.
+    /// If not specified, the `canonical` link is assumed.
     ///
     /// This plugin instantiates a `yarp::dev::FrameTransformClient`
     /// in order to publish the transform between the Gazebo world frame
@@ -37,7 +40,7 @@ namespace gazebo
     /// Each transform published by the plugin contains as `source` frame the string
     /// "/inertial" and as `target` frame a string that depends on the `name` option
     /// of the `model` tag within the SDF. If such a name is `<name>` the string describing
-    /// the `target` will be "/<name>/frame". In case the model `<name>` is inserted in the
+    /// the `target` will be "/<name>/<linkName>/frame". In case the model `<name>` is inserted in the
     /// Gazebo environment more than once than the its name becomes `<name>_x` where
     /// `x` assumes the values `0, 1, 2...`. This beavior depends on the internal behavior of
     /// Gazebo.
@@ -58,14 +61,15 @@ namespace gazebo
     ///
     ///    <plugin name='...' filename='libgazebo_yarp_modelposepublisher.so'>
     ///      <period>1.0</period>
+    ///      <linkName>desiredLinkName</linkName>
     ///    </plugin>
     ///
     ///	  </model>
     /// <\sdf>
     /// \endcode
-    /// then the pose of the root link depends on both the transformation between
+    /// then the pose of the link depends on both the transformation between
     /// the Gazebo world frame and the model frame and the transformation between
-    /// the model frame and the root link.
+    /// the model frame and the link.
     ///
     /// In order to retrieve the published transform an istance of
     /// `yarp::dev::FrameTransformClient` can be used. An example is provided below
@@ -94,7 +98,7 @@ namespace gazebo
     /// // Retrieve the transform
     /// yarp::sig::Matrix transform(4, 4);
     /// std::string source = "/inertial";
-    /// std::string target = "/<name>/frame";
+    /// std::string target = "/<name>/<linkName>/frame";
     /// bool ok_transform = m_tfClient->getTransform(target, source, transform);
     /// if (!ok_transform) {
     ///     // Transform not ready...
@@ -146,6 +150,11 @@ namespace gazebo
 	 * Update period of the plugin
 	 */
 	double m_period;
+
+        /**
+         * Name of the link whose pose is published
+         */
+        std::string m_linkName = "canonical";
 
 	/**
 	 * PolyDriver required to access a yarp::dev::IFrameTransform

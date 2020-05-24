@@ -67,13 +67,39 @@ void GazeboYarpModelPosePublisher::Load(gazebo::physics::ModelPtr _parent, sdf::
 	m_period = 0.01;
     }
 
+    // Load link name
+    if (_sdf->HasElement("linkName")) {
+        // get the parameter
+        std::string linkName;
+        sdf::ParamPtr linkNamePtr = _sdf->GetElement("linkName")->GetValue();
+
+        if ((linkNamePtr != nullptr) && (linkNamePtr->Get<std::string>(linkName)) && !(linkName.empty()))
+        {
+            if (m_model->GetLink(linkName) == nullptr)
+            {
+                yError() << "GazeboYarpModelPosePublisher::Load error:"
+                         << "a valid optional parameter <linkName> = '" + linkName + "' found for model"
+                         << m_model->GetName()
+                         << ", however the specified link does not exist. The plugin will not be loaded.";
+
+                return;
+            }
+
+            m_linkName = linkName;
+
+            yInfo() << "GazeboYarpModelPosePublisher::Load info:"
+                    << "a valid optional parameter <linkName> = '" + m_linkName + "' found for model"
+                    << m_model->GetName();
+        }
+    }
+
     // Prepare properties for the PolyDriver
     yarp::os::Property propTfClient;    
     propTfClient.put("device", "transformClient");
     // The local port depends on the model name that is unique
     // also in the case of multiple insertions of the same model
     // in Gazebo
-    propTfClient.put("local", "/" + m_model->GetName() + "/transformClient");
+    propTfClient.put("local", "/" + m_model->GetName() + "/" + m_linkName + "/transformClient");
     propTfClient.put("remote", "/transformServer");
     // This is the update period of the transformClient in ms
     propTfClient.put("period", m_period * 1000);
@@ -105,9 +131,9 @@ void GazeboYarpModelPosePublisher::PublishTransform()
 {
     // Get the current pose of the canonical link of the model    
 #if GAZEBO_MAJOR_VERSION >= 8
-    ignition::math::Pose3d curPose = m_model->GetLink()->WorldPose();
+    ignition::math::Pose3d curPose = m_model->GetLink(m_linkName)->WorldPose();
 #else
-    gazebo::math::Pose curPoseGazebo = m_model->GetLink()->GetWorldPose();
+    gazebo::math::Pose curPoseGazebo = m_model->GetLink(m_linkName)->GetWorldPose();
     // Convert to Ignition so that the same interface
     // can be used in the rest of the function
     ignition::math::Pose3d curPose = curPoseGazebo.Ign();
@@ -131,7 +157,7 @@ void GazeboYarpModelPosePublisher::PublishTransform()
     // Set a new transform using
     // /inertial for source frame name and
     // /<model_name>/frame for the target frame name
-    m_tfClient->setTransform("/" + m_model->GetName() + "/frame",
+    m_tfClient->setTransform("/" + m_model->GetName() + "/" + m_linkName + "/frame",
 			     "/inertial",
 			     inertialToModel.toMatrix());
 }
