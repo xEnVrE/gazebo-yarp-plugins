@@ -7,11 +7,13 @@ PROJECT(Plugin_ModelPosePublisher)
 
 include(AddGazeboYarpPluginTarget)
 
+find_package(Eigen3 REQUIRED)
+
 
 add_gazebo_yarp_plugin_target(LIBRARY_NAME modelposepublisher
                               INCLUDE_DIRS include/gazebo
                               SYSTEM_INCLUDE_DIRS ${GAZEBO_YARP_COMMON_HEADERS} ${Boost_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS}  ${SDFORMAT_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIRS} ${OGRE_INCLUDE_DIRS}
-                              LINKED_LIBRARIES gazebo_yarp_lib_common ${YARP_LIBRARIES} ${GAZEBO_LIBRARIES} ${Boost_LIBRARIES}
+                              LINKED_LIBRARIES gazebo_yarp_lib_common ${YARP_LIBRARIES} ${GAZEBO_LIBRARIES} ${Boost_LIBRARIES} Eigen3::Eigen
                               HEADERS include/gazebo/ModelPosePublisher.hh
                               SOURCES src/ModelPosePublisher.cc
                               )
