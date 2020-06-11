@@ -11,6 +11,7 @@
 #include <gazebo/common/Plugin.hh>
 
 // yarp
+#include <yarp/os/BufferedPort.h>
 #include <yarp/os/Network.h>
 #include <yarp/dev/ControlBoardInterfaces.h>
 #include <yarp/dev/IFrameTransform.h>
@@ -116,66 +117,82 @@ namespace gazebo
     class GazeboYarpModelPosePublisher : public ModelPlugin
     {
     public:
-	~GazeboYarpModelPosePublisher();
-	
-	/**
-	 * Store pointer to the model, load parameters from the SDF,
-	 * configure the frame transform client, reset the time of the last update and
-	 * connect to the World update event of Gazebo.
-	 */	
-	void Load(gazebo::physics::ModelPtr, sdf::ElementPtr);
-	
+        ~GazeboYarpModelPosePublisher();
+
+        /**
+         * Store pointer to the model, load parameters from the SDF,
+         * configure the frame transform client, reset the time of the last update and
+         * connect to the World update event of Gazebo.
+         */
+        void Load(gazebo::physics::ModelPtr, sdf::ElementPtr);
+
     private:
-	/**
-	 * Instance of yarp::os::Network
-	 */
-	yarp::os::Network m_yarp;
+        /**
+         * Instance of yarp::os::Network
+         */
+        yarp::os::Network m_yarp;
 
-	/**
-	 * Pointer to the model where the plugin is inserted
-	 */
-	gazebo::physics::ModelPtr m_model;
+        /**
+         * Pointer to the model where the plugin is inserted
+         */
+        gazebo::physics::ModelPtr m_model;
 
-	/**
-	 * Connection to the World update event of Gazebo
-	 */
-	gazebo::event::ConnectionPtr m_worldUpdateConnection;
+        /**
+         * Connection to the World update event of Gazebo
+         */
+        gazebo::event::ConnectionPtr m_worldUpdateConnection;
 
-	/**
-	 * Time of the last update of the plugin
-	 */
-	gazebo::common::Time m_lastUpdateTime;
-		
-	/**
-	 * Update period of the plugin
-	 */
-	double m_period;
+        /**
+         * Last pose available required to estimate the velocity by finite differences.
+         */
+        ignition::math::Pose3d m_lastPose;
+
+        bool m_lastPoseInitialized = false;
+
+        /**
+         * Time of the last update of the plugin
+         */
+        gazebo::common::Time m_lastUpdateTime;
+
+        /**
+         * Update period of the plugin
+         */
+        double m_period;
 
         /**
          * Name of the link whose pose is published
          */
         std::string m_linkName = "canonical";
 
-	/**
-	 * PolyDriver required to access a yarp::dev::IFrameTransform
-	 */
-	yarp::dev::PolyDriver m_drvTransformClient;
+        /**
+         * PolyDriver required to access a yarp::dev::IFrameTransform
+         */
+        yarp::dev::PolyDriver m_drvTransformClient;
 
-	/**
-	 * Pointer to yarp::dev::IFrameTransform view of the PolyDriver
-	 */
-	yarp::dev::IFrameTransform* m_tfClient;
+        /**
+         * Pointer to yarp::dev::IFrameTransform view of the PolyDriver
+         */
+        yarp::dev::IFrameTransform* m_tfClient;
 
-	/**
-	 * Publish the transform from the inertial frame to the model root link frame.
-	 */	
-	void PublishTransform();
+        /**
+         * Pointer to yarp::dev::IFrameTransform view of the PolyDriver
+         */
+        yarp::os::BufferedPort<yarp::sig::Vector> m_velocityOutputPort;
 
-	/**
-	 * Check if a period is elapsed since last update 
-	 * and in case calls the method `PublishTransform`.
-	 */	
-	void OnWorldUpdate();
+        yarp::os::BufferedPort<yarp::sig::Vector> m_rawVelocityOutputPort;
+
+        /**
+         * Publish the transform from the inertial frame to the model root link frame.
+         */
+        void PublishTransform();
+
+        /**
+         * Check if a period is elapsed since last update
+         * and in case calls the method `PublishTransform`.
+         */
+        void OnWorldUpdate();
+
+        ignition::math::Vector3d estimate_angular_velocity(const ignition::math::Quaterniond& initial_rotation, const ignition::math::Quaterniond& final_rotation, const double& elapsed_time);
     };
 }
 #endif
