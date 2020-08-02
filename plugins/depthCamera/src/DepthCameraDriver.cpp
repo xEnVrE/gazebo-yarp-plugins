@@ -18,6 +18,10 @@
 #include <gazebo/rendering/Distortion.hh>
 #include <ignition/math/Angle.hh>
 
+#include <opencv2/imgproc/imgproc.hpp>
+
+#include <random>
+
 #define myError(s) yError() << "GazeboDepthCameraDriver:" << s; m_error = s
 
 using namespace std;
@@ -64,7 +68,8 @@ GazeboYarpDepthCameraDriver::GazeboYarpDepthCameraDriver()
     m_format2VocabPixel["BAYER_GBRG8"] = VOCAB_PIXEL_ENCODING_BAYER_GBRG8;
     m_format2VocabPixel["BAYER_GRBG8"] = VOCAB_PIXEL_ENCODING_BAYER_GRBG8;
 
-
+    m_random_generator = std::mt19937(m_rd());
+    m_uniform = std::uniform_real_distribution<>(0.0, 1.0);
 }
 
 GazeboYarpDepthCameraDriver::~GazeboYarpDepthCameraDriver()
@@ -216,9 +221,28 @@ void GazeboYarpDepthCameraDriver::OnNewDepthFrame(const float* image, UInt _widt
         m_depthFrame_Buffer     = new float[_width * _height];
     }
 
+    float near = m_depthCameraSensorPtr->DepthCamera()->NearClip();
+    float far = m_depthCameraSensorPtr->DepthCamera()->FarClip();
+
     if(m_depthCameraSensorPtr->IsActive())
     {
         memcpy(m_depthFrame_Buffer, image, _width * _height * sizeof(float));
+
+        cv::Mat depth_cv(m_height, m_width, CV_32FC1);
+        for (int v = 0; v < m_height; v++)
+        {
+            for (int u = 0; u < m_width; u++)
+            {
+                const float& z = m_depthFrame_Buffer[v * m_width + u];
+                float depth = far * (z - near) / (z * (far - near));
+                double noisy_depth = depth + (0.0 * std::pow(z - 0.5, 2.0) + 0.007) * m_uniform(m_random_generator);
+                noisy_depth = int(noisy_depth * 40000) / 40000.0;
+                depth_cv.at<float>(v, u) = 2 * far * near / (far + near - (far - near) * (2 * noisy_depth - 1));
+            }
+        }
+        cv::Mat depth_wrapper(m_height, m_width, CV_32FC1, (void*)m_depthFrame_Buffer, 0);
+        cv::bilateralFilter(depth_cv, depth_wrapper, 5, 0.1, 5);
+
         m_depthTimestamp.update(this->m_depthCameraSensorPtr->LastUpdateTime().Double());
     }
 }
@@ -406,6 +430,11 @@ bool GazeboYarpDepthCameraDriver::getDepthImage(depthImageType& depthImage, Stam
     depthImage.resize(m_width, m_height);
     //depthImage.setPixelCode(m_depthFormat);
     memcpy(depthImage.getRawImage(), m_depthFrame_Buffer, m_width * m_height * sizeof(float));
+
+    float nearPlane = m_depthCameraSensorPtr->DepthCamera()->NearClip();
+    float farPlane  = m_depthCameraSensorPtr->DepthCamera()->FarClip();
+
+
 
     timeStamp->update(this->m_depthCameraSensorPtr->LastUpdateTime().Double());
 

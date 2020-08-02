@@ -130,6 +130,10 @@ private:
     gazebo::event::ConnectionPtr              m_updateDepthFrame_Connection;
     gazebo::event::ConnectionPtr              m_updateRGBPointCloud_Connection;
     gazebo::event::ConnectionPtr              m_updateImageFrame_Connection;
+
+    std::random_device m_rd;
+    std::mt19937 m_random_generator;
+    std::uniform_real_distribution<> m_uniform;
 };
 
 #endif // GAZEBOYARP_DEPTHCAMERADRIVER_H
